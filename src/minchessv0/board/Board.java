@@ -77,6 +77,9 @@ public class Board {
         return (int) board[STATUS] & PLAYER_BIT;
     }
 
+    public static final int WHITE_KINGSIDE_BITS = 0b1;
+    public static final int BLACK_KINGSIDE_BITS = 0b100;
+
     /**
      * This method returns whether kingside castling is possible for a player
      * 
@@ -85,8 +88,11 @@ public class Board {
      * @return true if kingside castling is possible
      */
     public static boolean kingSide(long[] board, int player) {
-        return (board[STATUS] & (player == 0 ? 0b1 : 0b100)) != 0L;
+        return (board[STATUS] & (player == Value.WHITE ? WHITE_KINGSIDE_BITS : BLACK_KINGSIDE_BITS)) != 0L;
     }
+
+    public static final int WHITE_QUEENSIDE_BITS = 0b10;
+    public static final int BLACK_QUEENSIDE_BITS = 0b1000;
 
     /**
      * This method returns whether queenside castling is possible for a player
@@ -96,7 +102,7 @@ public class Board {
      * @return true if queenside castling is possible
      */
     public static boolean queenSide(long[] board, int player) {
-        return (board[STATUS] & (player == 0 ? 0b10 : 0b1000)) != 0L;
+        return (board[STATUS] & (player == Value.WHITE ? WHITE_QUEENSIDE_BITS : BLACK_QUEENSIDE_BITS)) != 0L;
     }
 
     public static final long WHITE_ENPASSANT_SQUARES = 0x0000ff0000000000L;
@@ -183,6 +189,8 @@ public class Board {
         return board[KEY];
     }
 
+    public static final String FEN_STARTING_POSITION = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
     /**
      * This is a factory method which creates a new board array from a FEN string
      * representing the starting position
@@ -190,7 +198,7 @@ public class Board {
      * @return a new board array representing the starting position
      */
     public static long[] startingPosition() {
-        return fromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        return fromFen(FEN_STARTING_POSITION);
     }
 
     /**
@@ -220,7 +228,7 @@ public class Board {
          */
         int piece;
         long squareBit;
-        for(int square = 0; square < 64; square ++) {
+        for(int square = SQUARE_A1; square <= SQUARE_H8; square ++) {
             /*
              * if the square is not empty, set the corresponding bit in the appropriate
              * piece bitboard and occupancy bitboard for that player
@@ -288,6 +296,8 @@ public class Board {
     public static final int SQUARE_A8 = 56;
     public static final int SQUARE_H1 = 7;
     public static final int SQUARE_H8 = 63;
+    public static final int WHITE_CASTLING_BITS = WHITE_KINGSIDE_BITS | WHITE_QUEENSIDE_BITS;
+    public static final int BLACK_CASTLING_BITS = BLACK_KINGSIDE_BITS | BLACK_QUEENSIDE_BITS;
 
     /**
      * This is a factory method which returns a new board array representing the
@@ -389,12 +399,12 @@ public class Board {
                  * check if castling is possible and if it is, turn off the castling bits for
                  * that player and update the zobrist key
                  */
-                boolean playerKingSideCastling  = (castling & Value.KINGSIDE_BIT[player])  != 0;
-                boolean playerQueenSideCastling = (castling & Value.QUEENSIDE_BIT[player]) != 0;
+                boolean playerKingSideCastling  = (castling & (player == Value.WHITE ? WHITE_KINGSIDE_BITS : BLACK_KINGSIDE_BITS))  != 0;
+                boolean playerQueenSideCastling = (castling & (player == Value.WHITE ? WHITE_QUEENSIDE_BITS : BLACK_QUEENSIDE_BITS)) != 0;
                 if(playerKingSideCastling || playerQueenSideCastling) {
                     key ^= (playerKingSideCastling  ? Zobrist.KING_SIDE[player]  : 0)
                         ^  (playerQueenSideCastling ? Zobrist.QUEEN_SIDE[player] : 0);
-                    castling &= ~(Value.KINGSIDE_BIT[player] | Value.QUEENSIDE_BIT[player]);
+                    castling &= ~(player == Value.WHITE ? WHITE_CASTLING_BITS : BLACK_CASTLING_BITS);
                 }
                 /*
                  * if the king moves 2 squares horizontally, this is a castling move, so update
@@ -520,15 +530,15 @@ public class Board {
          */
         if((targetPiece & Piece.TYPE) == Piece.ROOK) {
             int other = 1 ^ player;
-            if((castling & (other == 0 ? 0b1 : 0b100)) != Value.NONE) {
+            if((castling & (other == Value.WHITE ? WHITE_KINGSIDE_BITS : BLACK_KINGSIDE_BITS)) != Value.NONE) {
                 if(targetSquare == (other == Value.WHITE ? SQUARE_H1 : SQUARE_H8)) {
-                    castling ^= (other == 0 ? 0b1 : 0b100);
+                    castling ^= (other == Value.WHITE ? WHITE_KINGSIDE_BITS : BLACK_KINGSIDE_BITS);
                     key ^= Zobrist.KING_SIDE[other];
                 }
             }
-            if((castling & (other == 0 ? 0b10 : 0b1000)) != Value.NONE) {
+            if((castling & (other == Value.WHITE ? WHITE_QUEENSIDE_BITS : BLACK_QUEENSIDE_BITS)) != Value.NONE) {
                 if(targetSquare == (other == Value.WHITE ? SQUARE_A1 : SQUARE_A8)) {
-                    castling ^= (other == 0 ? 0b10 : 0b1000);
+                    castling ^= (other == Value.WHITE ? WHITE_QUEENSIDE_BITS : BLACK_QUEENSIDE_BITS));
                     key ^= Zobrist.QUEEN_SIDE[other];
                 }
             }
