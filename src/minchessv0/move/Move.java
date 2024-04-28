@@ -337,6 +337,14 @@ public class Move {
         return startSquare | (targetSquare << 6);
     }
 
+    public static String moveListString(long[] moveList) {
+        String string = "";
+        for(int i = 0; i < moveList[99]; i ++) {
+            string += "Move " + (i + 1) + ": " + string(moveList[i]) + "\n";
+        }
+        return string;
+    }
+
     private Move() {}
 
 }
