@@ -42,7 +42,7 @@ public class Fen {
         if(rank == -1) return -1;
         int eSquare = rank << 3 | file;
         int playerToMove = getWhiteToMove(fen) ? 0 : 1;
-		return (playerToMove == 0 && eSquare > 15 && eSquare < 24) || (playerToMove == 1 && eSquare > 39 && eSquare < 48) ? eSquare : -1;
+		return (playerToMove == 0 && eSquare > 39 && eSquare < 48) || (playerToMove == 1 && eSquare > 15 && eSquare < 24) ? eSquare : -1;
     }
 
     public static int getHalfMoveClock(String fen) {
