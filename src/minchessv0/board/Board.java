@@ -538,7 +538,7 @@ public class Board {
             }
             if((castling & (other == Value.WHITE ? WHITE_QUEENSIDE_BITS : BLACK_QUEENSIDE_BITS)) != Value.NONE) {
                 if(targetSquare == (other == Value.WHITE ? SQUARE_A1 : SQUARE_A8)) {
-                    castling ^= (other == Value.WHITE ? WHITE_QUEENSIDE_BITS : BLACK_QUEENSIDE_BITS));
+                    castling ^= (other == Value.WHITE ? WHITE_QUEENSIDE_BITS : BLACK_QUEENSIDE_BITS);
                     key ^= Zobrist.QUEEN_SIDE[other];
                 }
             }
