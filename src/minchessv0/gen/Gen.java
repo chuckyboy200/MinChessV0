@@ -8,7 +8,6 @@ import minchessv0.util.Value;
 
 public class Gen {
     
-    
     /**
      * This is the maximum number of moves (+1) that can be held in the moves array
      * The last element contains the number of actual moves in the array, since the array is a constant size
@@ -120,7 +119,7 @@ public class Gen {
     }
 
     /**
-     * During move generation, add a move to the moves array
+     * Add a move to the moves array
      * 
      * @param board          the board array
      * @param moves          the moves array
@@ -134,7 +133,7 @@ public class Gen {
     }
 
     /**
-     * During move generation, add pawn promotion moves to the moves array
+     * Add pawn promotion moves to the moves array
      * 
      * @param board          the board array
      * @param moves          the moves array
@@ -166,7 +165,7 @@ public class Gen {
      * @return the number of moves in the moves array after king moves have been
      *         generated
      */
-    private static int getKingMoves(long[] board, long[] moves, int piece, int player, int moveListLength, long allOccupancy, long tacticalOccupancy, boolean tactical) {
+    private static int getKingMoves(long[] board, long[] moves, int piece, int moveListLength, int player, long allOccupancy, long tacticalOccupancy, boolean tactical) {
         /*
          * get the king square from the king bitboard
          */
@@ -304,6 +303,7 @@ public class Gen {
             /*
              * get the square of the pawn
              */
+            
             square = Long.numberOfTrailingZeros(pawnBitboard);
             /*
              * initialize and set the attacks bitboard to 0
