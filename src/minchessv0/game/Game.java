@@ -6,23 +6,20 @@ import minchessv0.input.InputHandler;
 import minchessv0.move.Move;
 import minchessv0.test.Perft;
 
-public class Game {
+public enum Game {
+    INSTANCE;
     
     public static Game get() {
-        if(Game.game == null) {
-            Game.game = new Game();
-        }
-        return Game.game;
+        return INSTANCE;
     }
 
     public static void run() {
         Perft.all();
         //get().init();
         //get().loop();
-        //Perft.fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 5);
+        //Perft.fen("8/8/1k6/2b5/2pP4/8/5K2/8 b - d3 0 1", 1);
     }
 
-    private static Game game;
     private long[] board;
     private long[][] boardHistory;
     private int boardCount;
