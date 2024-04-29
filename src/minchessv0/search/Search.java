@@ -12,6 +12,7 @@ public class Search implements Runnable {
     }
 
     public Search(long[] board,int depth) {
+        this.root = new long[board.length];
         System.arraycopy(board, 0, this.root, 0, board.length);
         this.maxDepth = depth;
         this.haltRequested = false;
