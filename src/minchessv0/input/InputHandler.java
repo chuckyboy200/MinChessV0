@@ -1,12 +1,10 @@
 package minchessv0.input;
 
 import java.util.Scanner;
-
-import minchessv0.board.Board;
-import minchessv0.eval.Eval;
-import minchessv0.gen.Gen;
-import minchessv0.test.Perft;
-import minchessv0.search.Search;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.List;
 
 public class InputHandler {
 
@@ -20,64 +18,28 @@ public class InputHandler {
     public static final String FEN_COMMAND = "fen";
     public static final String GEN_COMMAND = "gen";
     public static final String PERFT_COMMAND = "perft";
-
+    
     public InputHandler() {
         this.scanner = new Scanner(System.in);
     }
 
-    public String getCommand() {
-        return scanner.nextLine();
-    }
-
-    public void commandDraw(long[] board) {
-        Board.drawText(board);
-    }
-
-    public void commandGo(long[] board, int depth) {
-        System.out.println("Searching to depth " + depth);
-        if (searchThread != null && searchThread.isAlive()) {
-            System.out.println("Error: Search is already running.");
-        } else {
-            searchTask = new Search(board, depth);
-            searchThread = new Thread(searchTask);
-            searchThread.start();
-        }
-    }
-
-    public void commandEval(long[] board) {
-        System.out.println("Eval: " + Eval.eval(board));
-    }
-
-    public void commandHalt() {
-        if (searchThread != null && searchThread.isAlive()) {
-            searchTask.requestHalt();
-        }
-    }
-
-    public long[] commandMove(long[] board, int start, int target, int promote) {
-        long[] moveList = Gen.gen(board, true, false);
-        for(long move : moveList) {
-            if((move & Board.SQUARE_BITS) == start && (move >>> Board.TARGET_SQUARE_SHIFT & Board.SQUARE_BITS) == target && (move >>> Board.PROMOTE_PIECE_SHIFT & Board.PIECE_BITS) == promote) {
-                return Board.makeMove(board, move);
+    public List<String> getCommand() {
+        System.out.print("> ");
+        String input = scanner.nextLine();
+        Pattern pattern = Pattern.compile("[^\\s\"']+|\"([^\"]*)\"");
+        Matcher matcher = pattern.matcher(input);
+        List<String> parts = new ArrayList<>();
+        while(matcher.find()) {
+            if(matcher.group(1) != null) {
+                parts.add(matcher.group(1));
+            } else {
+                parts.add(matcher.group());
             }
         }
-        return board;
+        return parts;
     }
 
-    public long[] commandFen(String fen) {
-        return Board.fromFen(fen);
-    }
-
-    public long[] commandGen(long[] board) {
-        return Gen.gen(board, true, false);
-    }
-
-    public void commandPerft() {
-        Perft.all();
-    }
-    
     private Scanner scanner;
-    private Search searchTask;
-    private Thread searchThread;
+
 
 }
