@@ -301,7 +301,6 @@ public class Move {
                 | (getSquare(board, targetSquare) << 20);
     }
 
-    
     /**
      * check whether a move from one square to another exists in a list of moves
      * 
@@ -311,13 +310,13 @@ public class Move {
      * @return the index of the move in the list of moves, or Value.INVALID if there
      *         is no matching move in the move list
      */
-    public static int isValid(int[] moves, int startSquare, int targetSquare) {
+    public static int isValid(long[] moves, int startSquare, int targetSquare) {
         int index = Value.INVALID;
         /*
          * loop over the moves in the list of moves and check if the start and target
          * squares match the start and target squares of the move
          */
-        for (int move = 0; move < moves[Gen.MOVELIST_SIZE]; move++) {
+        for (int move = 0; move < moves[Gen.MOVELIST_SIZE]; move ++) {
             if ((moves[move] & 0xfff) == convertStartTarget(startSquare, targetSquare)) {
                 index = move;
                 break;
