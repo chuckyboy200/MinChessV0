@@ -23,6 +23,10 @@ public class Eval {
         return eval;
     }
 
+    public static int see(long[] board, int start, int target) {
+        return 0;
+    }
+
     private Eval() {}
 
 }
