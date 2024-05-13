@@ -774,6 +774,15 @@ public class Board {
         return fen.toString();
     }
 
+    public static int countPiece(long[] board, int piece) {
+        return Long.bitCount(board[piece]);
+    }
+
+    public static int countMaterialPieces(long[] board, int player) {
+        int playerBit = player << 3;
+        return Long.bitCount(board[Piece.QUEEN | playerBit]) + Long.bitCount(board[Piece.ROOK | playerBit]) + Long.bitCount(board[Piece.BISHOP | playerBit]) + Long.bitCount(board[Piece.KNIGHT | playerBit]);
+    }
+
     /**
      * Return the material value of a player
      * 
