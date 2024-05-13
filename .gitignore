@@ -36,3 +36,6 @@ target/
 
 # Gradle
 build/
+a.at
+MinChessV0.exe
+bin/META-INF/MANIFEST.MF
