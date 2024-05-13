@@ -9,21 +9,39 @@ import minchessv0.gen.Gen;
 import minchessv0.input.InputHandler;
 import minchessv0.move.Move;
 import minchessv0.search.Search;
-import minchessv0.test.Perft;
+import minchessv0.search.SearchTest;
+import minchessv0.uci.CommandQueue;
+import minchessv0.uci.Engine;
 import minchessv0.util.Value;
 
 public enum Game {
     INSTANCE;
-    
-    public static Game get() {
-        return INSTANCE;
+
+    public void run() {
+        init();
+        loop();
     }
 
-    public static void run() {
-        //Perft.all();
-        get().init();
-        get().loop();
-        //Perft.fen("8/8/1k6/2b5/2pP4/8/5K2/8 b - d3 0 1", 1);
+    public void sendCommand(String command) {
+        this.commandQueue.add(command);
+    }
+
+    public void sendCommand(String command, String arg) {
+        this.commandQueue.add(command);
+        this.commandQueue.add(arg);
+    }
+
+    public void sendPriorityCommand(String command) {
+        this.commandQueue.addFront(command);
+    }
+
+    public void sendPriorityCommand(String command, String arg) {
+        this.commandQueue.addFront(arg);
+        this.commandQueue.addFront(command);
+    }
+
+    public long[] getBoard() {
+        return this.board;
     }
 
     private long[] board;
@@ -32,8 +50,16 @@ public enum Game {
     private InputHandler inputHandler;
     private boolean quit;
     private List<String> commandParts;
-    private Search searchTask;
+    private CommandQueue commandQueue;
+    private Engine engine;
+    private Thread UCIThread;
+    private boolean executeCommands;
+    private int maxDepth;
     private Thread searchThread;
+    private Search searchTask;
+    private int moveTime;
+    private int whiteTimeRemaining;
+    private int blackTimeRemaining;
 
     private Game() {}
 
@@ -44,110 +70,150 @@ public enum Game {
         this.inputHandler = new InputHandler();
         this.commandParts = new ArrayList<>();
         this.quit = false;
+        this.commandQueue = new CommandQueue();
+        this.engine = new Engine();
+        this.UCIThread = new Thread(this.engine);
+        this.UCIThread.start();
+        this.executeCommands = true;
+        this.maxDepth = 100;
+        this.moveTime = 1000000;
+        this.whiteTimeRemaining = 120000;
+        this.blackTimeRemaining = 120000;
+        //Window.init();
     }
 
     private void loop() {
         System.out.println("Starting");
         //this.board = Board.fromFen("8/3b4/6k1/5P2/4K3/8/8/8 b - - 0 1");
+        //test();
         this.board = Board.startingPosition();
         System.arraycopy(this.board, 0, this.boardHistory[boardCount ++], 0, this.board.length);
-        while(true) {
-            this.commandParts = inputHandler.getCommand();
-            if(this.commandParts.size() != 0) {
-                String commandToken = this.commandParts.get(0);
-                switch(commandToken) {
-                    case InputHandler.DRAW_COMMAND: {
-                        Board.drawText(this.board);
+        while(!quit) {
+            if(this.commandQueue.hasNext() && this.executeCommands) {
+                String command = this.commandQueue.getNext();
+                switch(command) {
+                    case "uci": {
+                        System.out.println("id name MinChessV0");
+                        System.out.println("id author Charles Clark");
+                        System.out.println("uciok");
                         break;
                     }
-                    case InputHandler.GO_COMMAND: {
-                        int depth = 0;
-                        try {
-                            depth = Integer.parseInt(this.commandParts.get(1));
-                        } catch (NumberFormatException e) {
-                            
+                    case "isready": {
+                        // do check for engine ready for new commands
+                        System.out.println("readyok");
+                        break;
+                    }
+                    case "fen": {
+                        String fen = this.commandQueue.getNext();
+                        this.board = Board.fromFen(fen);
+                        //Board.drawText(this.board);
+                        break;
+                    }
+                    case "startpos": {
+                        this.board = Board.startingPosition();
+                        //Board.drawText(this.board);
+                        break;
+                    }
+                    case "moves": {
+                        String moveString = this.commandQueue.getNext();
+                        int move = Move.stringToInt(this.board, moveString);
+                        System.out.println(moveString + "->" + Move.string(move));
+                        this.board = Board.makeMove(this.board, move);
+                        //Board.drawText(this.board);
+                        break;
+                    }
+                    case "depth": {
+                        this.maxDepth = Integer.parseInt(this.commandQueue.getNext());
+                        break;
+                    }
+                    case "infinite": {
+                        this.maxDepth = 100;
+                        break;
+                    }
+                    case "stop": {
+                        if(this.searchThread != null && this.searchThread.isAlive()) {
+                            this.searchTask.requestHalt();
                         }
-                        System.out.println("Searching to depth " + depth);
-                        if (searchThread != null && searchThread.isAlive()) {
-                            System.out.println("Error: Search is already running.");
+                        break;
+                    }
+                    case "search": {
+                        if(this.searchThread != null && this.searchThread.isAlive()) {
+                            //System.out.println("Search already in progress");
                         } else {
-                            searchTask = new Search(board, depth);
-                            searchThread = new Thread(searchTask);
-                            searchThread.start();
+                            this.searchTask = new SearchTest(this.board, this.maxDepth, 5000);
+                            this.searchThread = new Thread((Runnable) this.searchTask);
+                            this.searchThread.start();
                         }
-                        break;
                     }
-                    case InputHandler.HALT_COMMAND: {
-                        if (searchThread != null && searchThread.isAlive()) {
-                            searchTask.requestHalt();
-                        }
-                        break;
-                    }
-                    case InputHandler.MOVE_COMMAND: {
-                        String move = this.commandParts.get(1);
+                    case "makemove": {
+                        String move = this.commandQueue.getNext();
                         if(move.length() == 4 || move.length() == 5) {
                             int start = (move.charAt(0) - 'a') | ((move.charAt(1) - '1') << 3);
                             int target = (move.charAt(2) - 'a') | ((move.charAt(3) - '1') << 3);
                             int promotePiece = 0;
                             if(move.length() == 5) {
                                 promotePiece = "qrbn".indexOf(move.charAt(4));
-                                System.out.println(promotePiece);
+                                //System.out.println(promotePiece);
                                 if(promotePiece == -1) break;
                                 promotePiece = (promotePiece + 2) | (Board.player(this.board) << 3);
                             }
                             if(start >= 0 && start <= 63 && target >= 0 && target <= 63) {
                                 long[] moveList = Gen.gen(this.board, true, false);
-                                int m = Move.isValid(moveList, start, target);
+                                long m = Move.isValid(moveList, start, target);
                                 if(m != Value.INVALID) {
                                     long[] boardAfterMove = Board.makeMove(board, m);
-                                    if(boardAfterMove != board) {
-                                        this.board = boardAfterMove;
-                                        System.arraycopy(this.board, 0, this.boardHistory[boardCount ++], 0, this.board.length);
-                                        Board.drawText(this.board);
-                                    }
+                                    System.arraycopy(boardAfterMove, 0, this.board, 0, boardAfterMove.length);
+                                    System.arraycopy(this.board, 0, this.boardHistory[boardCount ++], 0, this.board.length);
+                                    //Board.drawText(this.board);
                                 }
                             }
                         }
                         break;
                     }
-                    case InputHandler.UNDO_COMMAND: {
-                        if(boardCount > 1) {
-                            System.arraycopy(this.board, 0, this.boardHistory[boardCount - 2], 0, this.boardHistory[boardCount - 2].length);
-                            boardCount --;
-                            Board.drawText(this.board);
-                        }
+                    case "eval": {
+                        System.out.println("eval " + Eval.eval(this.board));
                         break;
                     }
-                    case InputHandler.EVAL_COMMAND: {
-                        System.out.println(Eval.eval(this.board));
+                    case "searchcomplete": {
+                        System.out.println("bestmove " + Move.string(this.searchTask.bestMove()));
                         break;
                     }
-                    case InputHandler.FEN_COMMAND: {
-                        this.board = Board.fromFen(commandParts.get(1));
+                    case "movetime": {
+                        this.moveTime = Integer.parseInt(this.commandQueue.getNext());
                         break;
                     }
-                    case InputHandler.GEN_COMMAND: {
-                        long[] moveList = Gen.gen(this.board, true, false);
-                        for(int i = 0; i < moveList[99]; i ++) {
-                            System.out.println("Move " + (i + 1) + ": " + Move.string(moveList[i]));
-                        }
+                    case "pv": {
+                        System.out.println("PV: " + this.searchTask.pv());
                         break;
                     }
-                    case InputHandler.PERFT_COMMAND: {
-                        Perft.all();
-                        break;
-                    }
-                    case InputHandler.QUIT_COMMAND: {
+                    case "quit": {
                         this.quit = true;
                         break;
                     }
-                    default: {
-                        System.out.println("entered " + commandParts.get(0));
+                    case "ucinewgame": {
+                        // indicate that the next search begins searching on a new game
+                        // so reset all game parameters so that they don't carry over
+                        // from previous game
+                        break;
+                    }
+                    case "wtime": {
+
+                        break;
+                    }
+                    case "btime": {
+
+                        break;
+                    }
+                    case "draw": {
+                        Board.drawText(this.board);
                         break;
                     }
                 }
-                if(quit) break;
             }
         }
+    }
+
+    private void test() {
+
     }
 }
