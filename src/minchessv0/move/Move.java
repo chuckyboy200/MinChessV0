@@ -277,14 +277,24 @@ public class Move {
      * @param moveString the move string to be converted
      * @return the move integer
      */
-    public static final int stringToInt(long[] board, String moveString) {
+    public static int stringToInt(long[] board, String moveString) {
+        /*
+         * check string is a valid move string
+         */
+        if(moveString.length() < 4) return Value.INVALID;
+        int startFile = Value.FILE_STRING.indexOf(moveString.charAt(0));
+        if(startFile == Value.INVALID) return Value.INVALID;
+        int startRank = Character.getNumericValue(moveString.charAt(1)) - 1;
+        if(startRank == Value.INVALID) return Value.INVALID;
+        int targetFile = Value.FILE_STRING.indexOf(moveString.charAt(2));
+        if(targetFile == Value.INVALID) return Value.INVALID;
+        int targetRank = Character.getNumericValue(moveString.charAt(3)) - 1;
+        if(targetRank == Value.INVALID) return Value.INVALID;
         /*
          * get the start square and target square from the move string
          */
-        int startSquare = Value.FILE_STRING.indexOf(moveString.charAt(0))
-                + ((Character.getNumericValue(moveString.charAt(1)) - 1) << 3);
-        int targetSquare = Value.FILE_STRING.indexOf(moveString.charAt(2))
-                + ((Character.getNumericValue(moveString.charAt(3)) - 1) << 3);
+        int startSquare = startRank << 3 | startFile;
+        int targetSquare = targetRank << 3 | targetFile;
         int promotePiece = 0;
         /*
          * if the move string has a 5th character, it is a promotion move, so get the
@@ -292,6 +302,7 @@ public class Move {
          */
         if (moveString.length() > 4) {
             promotePiece = PIECE_STRING.indexOf(moveString.charAt(4));
+            if(promotePiece == Value.INVALID) return Value.INVALID;
         }
         /*
          * create a move integer from the start square, target square, promotion piece,
@@ -307,10 +318,9 @@ public class Move {
      * @param moves        the list of moves
      * @param startSquare  the start square of the move
      * @param targetSquare the target square of the move
-     * @return the index of the move in the list of moves, or Value.INVALID if there
-     *         is no matching move in the move list
+     * @return the move
      */
-    public static int isValid(long[] moves, int startSquare, int targetSquare) {
+    public static long isValid(long[] moves, int startSquare, int targetSquare) {
         int index = Value.INVALID;
         /*
          * loop over the moves in the list of moves and check if the start and target
@@ -322,7 +332,7 @@ public class Move {
                 break;
             }
         }
-        return index;
+        return moves[index];
     }
 
     /**
