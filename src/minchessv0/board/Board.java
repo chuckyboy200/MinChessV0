@@ -774,17 +774,31 @@ public class Board {
         return fen.toString();
     }
 
+    /**
+     * Return the number of one type of piece on the board
+     * 
+     * @param board the board array
+     * @param piece the piece int
+     * @return the number of that piece on the board
+     */
     public static int countPiece(long[] board, int piece) {
         return Long.bitCount(board[piece]);
     }
 
+    /**
+     * Return the number of all non-pawn pieces for a player
+     * 
+     * @param board the board array
+     * @param player the player int
+     * @return the number of all non-pawn pieces for a player
+     */
     public static int countMaterialPieces(long[] board, int player) {
         int playerBit = player << 3;
         return Long.bitCount(board[Piece.QUEEN | playerBit]) + Long.bitCount(board[Piece.ROOK | playerBit]) + Long.bitCount(board[Piece.BISHOP | playerBit]) + Long.bitCount(board[Piece.KNIGHT | playerBit]);
     }
 
     /**
-     * Return the material value of a player
+     * Return the material value of a player for all pieces and pawns
      * 
      * @param board The board Array
      * @param player The player
@@ -797,6 +811,21 @@ public class Board {
         +      Long.bitCount(board[Piece.BISHOP | playerBit]) * Piece.VALUE[Piece.BISHOP]
         +      Long.bitCount(board[Piece.KNIGHT | playerBit]) * Piece.VALUE[Piece.KNIGHT]
         +      Long.bitCount(board[Piece.PAWN | playerBit])   * Piece.VALUE[Piece.PAWN];
+    }
+
+    /**
+     * Return the material value of a player for all pieces only
+     * 
+     * @param board The board Array
+     * @param player The player
+     * @return The player's material value
+     */
+    public static int materialValuePieces(long[] board, int player) {
+        int playerBit = player << PLAYER_SHIFT;
+        return Long.bitCount(board[Piece.QUEEN | playerBit])  * Piece.VALUE[Piece.QUEEN]
+        +      Long.bitCount(board[Piece.ROOK | playerBit])   * Piece.VALUE[Piece.ROOK]
+        +      Long.bitCount(board[Piece.BISHOP | playerBit]) * Piece.VALUE[Piece.BISHOP]
+        +      Long.bitCount(board[Piece.KNIGHT | playerBit]) * Piece.VALUE[Piece.KNIGHT];
     }
 
     /*
