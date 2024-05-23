@@ -1,7 +1,7 @@
 package minchessv0.search;
 
 import minchessv0.board.Board;
-import minchessv0.eval.Eval;
+import minchessv0.eval.Eval2;
 import minchessv0.game.Game;
 import minchessv0.gen.Gen;
 import minchessv0.move.Move;
@@ -10,11 +10,11 @@ import minchessv0.util.Piece;
 
 public class SearchTest implements Search, Runnable {
 
-    public SearchTest(long[] board, int maxDepth, int time) {
-        this.board = new long[board.length];
+    public SearchTest(long[] board, int maxDepth, long maxSearchTime) {
+        this.board = new long[Board.MAX_BITBOARDS];
         System.arraycopy(board, 0, this.board, 0, board.length);
         this.maxDepth = maxDepth;
-        this.time = time;
+        this.maxSearchTime = maxSearchTime;
         this.bestMove = 0L;
         this.rootPV = new int[MAX_PV_LENGTH];
         this.sendInfoDelay = 100000;
@@ -24,11 +24,6 @@ public class SearchTest implements Search, Runnable {
     public void run() {
         init();
         doSearch();
-    }
-
-    @Override
-    public long beginSearch(long[] board, int maxDepth, int time) {
-        return this.bestMove;
     }
 
     @Override
@@ -61,7 +56,7 @@ public class SearchTest implements Search, Runnable {
     private long[] board;
     private long[] rootMoveList;
     private int maxDepth;
-    private int time;
+    private long maxSearchTime;
     private long bestMove;
     private long startTime;
     private boolean timeReached;
@@ -93,11 +88,11 @@ public class SearchTest implements Search, Runnable {
         for(int moveIndex = 0; moveIndex < this.rootMoveList[Gen.MOVELIST_SIZE]; moveIndex ++) {
             move = this.rootMoveList[moveIndex];
             boardAfterMove = Board.makeMove(this.board, move);
-            eval = -Eval.eval(boardAfterMove);
+            eval = -new Eval2(boardAfterMove).eval();
             this.rootMoveList[moveIndex] = ((long) eval << 32) | (move & 0xffffffffL);
         }
         int[] tempPV = new int[MAX_PV_LENGTH];
-        for(int depth = 1; depth <= maxDepth; depth ++) {
+        for(int depth = 2; depth <= maxDepth; depth ++) {
             this.currentDepthNodes = this.nodes;
             this.currentSearchDepth = depth;
             sendInfo();
@@ -174,14 +169,14 @@ public class SearchTest implements Search, Runnable {
                 }
             }
         }
-        if(System.currentTimeMillis() - startTime >= time) {
+        if(System.currentTimeMillis() - startTime >= this.maxSearchTime) {
             this.timeReached = true;
         }
         return alpha;
     }
 
     private int quiesce(long[] board, int alpha, int beta) {
-        int standPat = Eval.eval(board);
+        int standPat = new Eval2(board).eval();
 		if (standPat >= beta) {
 			return beta;
 		}
@@ -199,7 +194,7 @@ public class SearchTest implements Search, Runnable {
         int eval;
 		for (int i = 0; i < moveList[Gen.MOVELIST_SIZE]; i ++) {
 			move = moveList[i];
-			if (Piece.VALUE[(int) move >>> Board.START_PIECE_SHIFT & Piece.TYPE] > Piece.VALUE[(int) move >>> Board.TARGET_PIECE_SHIFT & Piece.TYPE] && Board.countMaterialPieces(board, other) > 1 && Eval.see(board, (int) move & Board.SQUARE_BITS, (int) move >>> Board.TARGET_SQUARE_SHIFT & Board.SQUARE_BITS) < 0) continue;
+			if (Piece.VALUE[(int) move >>> Board.START_PIECE_SHIFT & Piece.TYPE] > Piece.VALUE[(int) move >>> Board.TARGET_PIECE_SHIFT & Piece.TYPE] && Board.countMaterialPieces(board, other) > 1 && Eval2.see(board, (int) move & Board.SQUARE_BITS, (int) move >>> Board.TARGET_SQUARE_SHIFT & Board.SQUARE_BITS) < 0) continue;
 			boardAfterMove = Board.makeMove(board, move);
             if(Board.isPlayerInCheck(boardAfterMove, player)) continue;
 			eval = -quiesce(boardAfterMove, -beta, -alpha);
