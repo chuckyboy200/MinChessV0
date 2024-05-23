@@ -9,7 +9,7 @@ import minchessv0.gen.Gen;
 import minchessv0.input.InputHandler;
 import minchessv0.move.Move;
 import minchessv0.search.Search;
-import minchessv0.search.SearchTest;
+import minchessv0.search.SearchParallel;
 import minchessv0.uci.CommandQueue;
 import minchessv0.uci.Engine;
 import minchessv0.util.Value;
@@ -57,7 +57,7 @@ public enum Game {
     private int maxDepth;
     private Thread searchThread;
     private Search searchTask;
-    private int moveTime;
+    private int maxSearchTime;
     private int whiteTimeRemaining;
     private int blackTimeRemaining;
 
@@ -76,7 +76,7 @@ public enum Game {
         this.UCIThread.start();
         this.executeCommands = true;
         this.maxDepth = 100;
-        this.moveTime = 1000000;
+        this.maxSearchTime = 1000000;
         this.whiteTimeRemaining = 120000;
         this.blackTimeRemaining = 120000;
         //Window.init();
@@ -140,7 +140,7 @@ public enum Game {
                         if(this.searchThread != null && this.searchThread.isAlive()) {
                             //System.out.println("Search already in progress");
                         } else {
-                            this.searchTask = new SearchTest(this.board, this.maxDepth, 5000);
+                            this.searchTask = new SearchParallel(this.board, this.maxDepth, this.maxSearchTime);
                             this.searchThread = new Thread((Runnable) this.searchTask);
                             this.searchThread.start();
                         }
@@ -179,7 +179,7 @@ public enum Game {
                         break;
                     }
                     case "movetime": {
-                        this.moveTime = Integer.parseInt(this.commandQueue.getNext());
+                        this.maxSearchTime = Integer.parseInt(this.commandQueue.getNext());
                         break;
                     }
                     case "pv": {
