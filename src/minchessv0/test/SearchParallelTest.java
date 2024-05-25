@@ -1,16 +1,17 @@
-package minchessv0.search;
+package minchessv0.test;
 
 import minchessv0.board.Board;
 import minchessv0.eval.Eval;
 import minchessv0.game.Game;
 import minchessv0.gen.Gen;
 import minchessv0.move.Move;
+import minchessv0.search.Search;
 import minchessv0.sort.Sort;
 import minchessv0.util.Piece;
 
-public class SearchParallel implements Search, Runnable {
+public class SearchParallelTest implements Search, Runnable {
     
-    public SearchParallel(long[] board, int maxDepth, long maxSearchTime) {
+    public SearchParallelTest(long[] board, int maxDepth, long maxSearchTime) {
         this.board = new long[Board.MAX_BITBOARDS];
         System.arraycopy(board, 0, this.board, 0, Board.MAX_BITBOARDS);
         this.rootMoveList = Gen.gen(this.board, true, false);
@@ -91,8 +92,13 @@ public class SearchParallel implements Search, Runnable {
         for(int moveIndex = 0; moveIndex < this.rootMoveListLength; moveIndex ++) {
             move = this.rootMoveList[moveIndex];
             boardAfterMove = Board.makeMove(this.board, move);
-            this.rootMoveList[moveIndex] = (move & 0xffffffffL) | ((long) -new Eval(boardAfterMove).eval() << 32);
+            int eval = -new Eval(boardAfterMove).eval();
+            this.rootMoveList[moveIndex] = (move & 0xffffffffL) | ((long) eval << 32);
+            System.out.println((int) (this.rootMoveList[moveIndex] >>> 32));
         }
+        System.out.println(Move.moveListString(this.rootMoveList));
+        Sort.sort(this.rootMoveList);
+        System.out.println(Move.moveListString(this.rootMoveList));
     }
 
     private void doSearch() throws InterruptedException {
@@ -110,7 +116,7 @@ public class SearchParallel implements Search, Runnable {
         int bestEval;
         int[] tempPV = new int[MAX_PV_LENGTH];
         int moveEval;
-        for(int depth = 2; depth <= this.maxDepth; depth += (this.maxDepth - depth == 1) ? 1 : 2) {
+        for(int depth = this.maxDepth < 2 ? this.maxDepth : 2; depth <= this.maxDepth; depth += (this.maxDepth - depth == 1) ? 1 : 2) {
             this.currentSearchDepth = depth;
             this.currentDepthNodes = this.nodesSearched;
             if(this.currentBestScore > (-INFINITY / 2)) sendInfo();
@@ -122,6 +128,15 @@ public class SearchParallel implements Search, Runnable {
                 boardAfterMove = Board.makeMove(this.board, move);
                 tempPV[0] = 0;
                 eval = -search(boardAfterMove, depth, -INFINITY, INFINITY, tempPV);
+                int staticEval = new Eval(boardAfterMove).eval();
+                if(Math.abs(staticEval - eval) > 100) {
+                    System.out.println("Variant eval at depth " + depth + " move " + Move.string(move));
+                    System.out.println("board: static eval " + new Eval(board).eval());
+                    Board.drawText(board);
+                    System.out.println("boardAfterMove: static eval " + staticEval);
+                    Board.drawText(boardAfterMove);
+                    System.out.println("search eval " + eval);
+                }
                 if(eval > moveEval) this.rootMoveList[moveIndex] = (move & 0xffffffffL) | ((long) eval << 32);
                 if(eval > bestEval) {
                     this.bestMove = move;
@@ -139,7 +154,7 @@ public class SearchParallel implements Search, Runnable {
         }
         sendInfo();
         this.searchRunning = false;
-        Game.INSTANCE.sendCommand("searchcomplete");
+        //Game.INSTANCE.sendCommand("searchcomplete");
     }
 
     private int search(long[] board, int depth, int alpha, int beta, int[] pv) {

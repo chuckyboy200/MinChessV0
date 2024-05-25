@@ -1,7 +1,7 @@
 package minchessv0.search;
 
 import minchessv0.board.Board;
-import minchessv0.eval.Eval2;
+import minchessv0.eval.Eval;
 import minchessv0.game.Game;
 import minchessv0.gen.Gen;
 import minchessv0.move.Move;
@@ -88,7 +88,7 @@ public class SearchTest implements Search, Runnable {
         for(int moveIndex = 0; moveIndex < this.rootMoveList[Gen.MOVELIST_SIZE]; moveIndex ++) {
             move = this.rootMoveList[moveIndex];
             boardAfterMove = Board.makeMove(this.board, move);
-            eval = -new Eval2(boardAfterMove).eval();
+            eval = -new Eval(boardAfterMove).eval();
             this.rootMoveList[moveIndex] = ((long) eval << 32) | (move & 0xffffffffL);
         }
         int[] tempPV = new int[MAX_PV_LENGTH];
@@ -176,7 +176,7 @@ public class SearchTest implements Search, Runnable {
     }
 
     private int quiesce(long[] board, int alpha, int beta) {
-        int standPat = new Eval2(board).eval();
+        int standPat = new Eval(board).eval();
 		if (standPat >= beta) {
 			return beta;
 		}
@@ -194,7 +194,7 @@ public class SearchTest implements Search, Runnable {
         int eval;
 		for (int i = 0; i < moveList[Gen.MOVELIST_SIZE]; i ++) {
 			move = moveList[i];
-			if (Piece.VALUE[(int) move >>> Board.START_PIECE_SHIFT & Piece.TYPE] > Piece.VALUE[(int) move >>> Board.TARGET_PIECE_SHIFT & Piece.TYPE] && Board.countMaterialPieces(board, other) > 1 && Eval2.see(board, (int) move & Board.SQUARE_BITS, (int) move >>> Board.TARGET_SQUARE_SHIFT & Board.SQUARE_BITS) < 0) continue;
+			if (Piece.VALUE[(int) move >>> Board.START_PIECE_SHIFT & Piece.TYPE] > Piece.VALUE[(int) move >>> Board.TARGET_PIECE_SHIFT & Piece.TYPE] && Board.countMaterialPieces(board, other) > 1 && Eval.see(board, (int) move & Board.SQUARE_BITS, (int) move >>> Board.TARGET_SQUARE_SHIFT & Board.SQUARE_BITS) < 0) continue;
 			boardAfterMove = Board.makeMove(board, move);
             if(Board.isPlayerInCheck(boardAfterMove, player)) continue;
 			eval = -quiesce(boardAfterMove, -beta, -alpha);
