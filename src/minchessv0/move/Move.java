@@ -346,10 +346,17 @@ public class Move {
         return startSquare | (targetSquare << 6);
     }
 
+    /**
+     * return a string which lists the moves in a moveList
+     * 
+     * @param moveList
+     * @return
+     */
     public static String moveListString(long[] moveList) {
         String string = "";
         for(int i = 0; i < moveList[99]; i ++) {
-            string += "Move " + (i + 1) + ": " + string(moveList[i]) + "\n";
+            long move = moveList[i];
+            string += "Move " + (i + 1) + ": " + string(move) + " (" + ((int) (move >>> 32)) + ")\n";
         }
         return string;
     }
