@@ -6,10 +6,12 @@ import java.util.List;
 import minchessv0.board.Board;
 import minchessv0.eval.Eval;
 import minchessv0.gen.Gen;
-import minchessv0.input.InputHandler;
 import minchessv0.move.Move;
 import minchessv0.search.Search;
 import minchessv0.search.SearchParallel;
+import minchessv0.test.EvalTest;
+import minchessv0.test.Perft;
+import minchessv0.test.SearchTest;
 import minchessv0.uci.CommandQueue;
 import minchessv0.uci.Engine;
 import minchessv0.util.Value;
@@ -20,6 +22,7 @@ public enum Game {
     public void run() {
         init();
         loop();
+        //test();
     }
 
     public void sendCommand(String command) {
@@ -47,7 +50,6 @@ public enum Game {
     private long[] board;
     private long[][] boardHistory;
     private int boardCount;
-    private InputHandler inputHandler;
     private boolean quit;
     private List<String> commandParts;
     private CommandQueue commandQueue;
@@ -67,7 +69,6 @@ public enum Game {
         this.board = new long[Board.MAX_BITBOARDS];
         this.boardHistory = new long[Board.MAX_BITBOARDS][512];
         this.boardCount = 0;
-        this.inputHandler = new InputHandler();
         this.commandParts = new ArrayList<>();
         this.quit = false;
         this.commandQueue = new CommandQueue();
@@ -76,7 +77,7 @@ public enum Game {
         this.UCIThread.start();
         this.executeCommands = true;
         this.maxDepth = 100;
-        this.maxSearchTime = 1000000;
+        this.maxSearchTime = 5000;
         this.whiteTimeRemaining = 120000;
         this.blackTimeRemaining = 120000;
         //Window.init();
@@ -138,12 +139,29 @@ public enum Game {
                     }
                     case "search": {
                         if(this.searchThread != null && this.searchThread.isAlive()) {
-                            //System.out.println("Search already in progress");
-                        } else {
-                            this.searchTask = new SearchParallel(this.board, this.maxDepth, this.maxSearchTime);
-                            this.searchThread = new Thread((Runnable) this.searchTask);
-                            this.searchThread.start();
+                            this.searchTask.requestHalt();
+                            try {
+                                this.searchThread.join();
+                            } catch(InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                            }
                         }
+                        int thisSearchTime = this.maxSearchTime;
+                        switch((int) this.board[Board.STATUS] & Board.PLAYER_BIT) {
+                            case 0: {
+                                if(this.whiteTimeRemaining < 60000) {
+                                    thisSearchTime = this.whiteTimeRemaining / 15;
+                                }
+                            }
+                            case 1: {
+                                if(this.blackTimeRemaining < 60000) {
+                                    thisSearchTime = this.blackTimeRemaining / 15;
+                                }
+                            }
+                        }
+                        this.searchTask = new SearchParallel(this.board, this.maxDepth, thisSearchTime);
+                        this.searchThread = new Thread((Runnable) this.searchTask);
+                        this.searchThread.start();
                     }
                     case "makemove": {
                         String move = this.commandQueue.getNext();
@@ -171,7 +189,7 @@ public enum Game {
                         break;
                     }
                     case "eval": {
-                        System.out.println("eval " + Eval.eval(this.board));
+                        System.out.println("eval " + new Eval(this.board).eval());
                         break;
                     }
                     case "searchcomplete": {
@@ -197,11 +215,11 @@ public enum Game {
                         break;
                     }
                     case "wtime": {
-
+                        this.whiteTimeRemaining = Integer.parseInt(this.commandQueue.getNext());
                         break;
                     }
                     case "btime": {
-
+                        this.blackTimeRemaining = Integer.parseInt(this.commandQueue.getNext());
                         break;
                     }
                     case "draw": {
@@ -214,6 +232,6 @@ public enum Game {
     }
 
     private void test() {
-
+        SearchTest.test();
     }
 }
