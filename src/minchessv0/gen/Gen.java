@@ -42,7 +42,7 @@ public class Gen {
          * occupancy, depending on whether only tactical moves are required
          */
         long allOccupancy = board[playerBit] | board[otherBit];
-        long tacticalOccupancy = tactical ? board[otherBit] : ~board[playerBit];
+        long otherOccupancy = board[otherBit];
         /*
          * create an array of ints to store the moves, the array's max size is set at
          * 100, the last element of the array is the length of the move list
@@ -54,10 +54,13 @@ public class Gen {
          * of moves in the moves array
          */
         int moveListLength = 0;
-        moveListLength = getKingMoves(board, moves, Piece.KING | playerBit, moveListLength, player, allOccupancy, tacticalOccupancy, tactical);
-        moveListLength = getKnightMoves(board, moves, Piece.KNIGHT | playerBit, moveListLength, tacticalOccupancy);
-        moveListLength = getPawnMoves(board, moves, Piece.PAWN | playerBit, moveListLength, player, allOccupancy, board[otherBit], tactical);
-        moveListLength = getSliderMoves(board, moves, player, moveListLength, allOccupancy, tacticalOccupancy);
+        moveListLength = getKingMoves2(board, moves, Piece.KING | playerBit, moveListLength, player, allOccupancy, otherOccupancy, tactical);
+        moveListLength = getKnightMoves2(board, moves, Piece.KNIGHT | playerBit, moveListLength, allOccupancy, otherOccupancy, tactical);
+        moveListLength = getPawnMoves2(board, moves, Piece.PAWN | playerBit, moveListLength, player, allOccupancy, otherOccupancy, tactical);
+        //moveListLength = getSliderMoves(board, moves, player, moveListLength, allOccupancy, tacticalOccupancy);
+        moveListLength = getQueenMoves2(board, moves, Piece.QUEEN | playerBit, player, moveListLength, allOccupancy, otherOccupancy, tactical);
+        moveListLength = getRookMoves2(board, moves, Piece.ROOK | playerBit, player, moveListLength, allOccupancy, otherOccupancy, tactical);
+        moveListLength = getBishopMoves2(board, moves, Piece.BISHOP | playerBit, player, moveListLength, allOccupancy, otherOccupancy, tactical);
         /*
          * throw an error if there are more moves than can fit in the moves array
          */
@@ -390,6 +393,199 @@ public class Gen {
             pieceType = piece & Piece.TYPE;
             attacks = ((pieceType == Piece.ROOK ? 0L : Magic.bishopMoves(square, allOccupancy)) | (pieceType == Piece.BISHOP ? 0L : Magic.rookMoves(square, allOccupancy))) & tacticalOccupancy;
             for(; attacks != 0L; attacks &= attacks - 1) addMove(board, moves, square, Long.numberOfTrailingZeros(attacks), moveListLength ++, piece);
+        }
+        return moveListLength;
+    }
+
+    private static int getKingMoves2(long[] board, long[] moves, int piece, int moveListLength, int player, long allOccupancy, long otherOccupancy, boolean tactical) {
+        int square = Long.numberOfTrailingZeros(board[piece]);
+        long kingAttacks = B.BB[B.KING_ATTACKS][square];
+        long moveBitboard = kingAttacks & otherOccupancy;
+        int targetSquare;
+        while(moveBitboard != 0L) {
+            targetSquare = Long.numberOfTrailingZeros(moveBitboard);
+            moveBitboard &= moveBitboard - 1;
+            moves[moveListLength ++] = square | (targetSquare << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT) | (Board.getSquare(board, targetSquare) << Board.TARGET_PIECE_SHIFT);
+        }
+        if(tactical) return moveListLength;
+        moveBitboard = kingAttacks & ~allOccupancy;
+        while(moveBitboard!= 0L) {
+            moves[moveListLength ++] = square | (Long.numberOfTrailingZeros(moveBitboard) << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT);
+            moveBitboard &= moveBitboard - 1;
+        }
+        int castling = (int) (board[Board.STATUS] >>> Board.CASTLING_SHIFT) & Board.CASTLING_BITS;
+        boolean kingSide = (castling & (player == Value.WHITE ? 0b1 : 0b100)) != Value.NONE;
+        boolean queenSide = (castling & (player == Value.WHITE ? 0b10 : 0b1000)) != Value.NONE;
+        if(kingSide || queenSide) {
+            int other = 1 ^ player;
+            if(!Board.isSquareAttackedByPlayer(board, square, other)) {
+                if(kingSide) {
+                    if((allOccupancy & (player == Value.WHITE ? 0x0000000000000060L : 0x6000000000000000L)) == 0L && !Board.isSquareAttackedByPlayer(board, square + 1, other))
+                        moves[moveListLength ++] = square | ((square + 2) << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT);
+                }
+                if(queenSide) {
+                    if((allOccupancy & (player == Value.WHITE ? 0x000000000000000eL : 0x0e00000000000000L)) == 0L && !Board.isSquareAttackedByPlayer(board, square - 1, other))
+                        moves[moveListLength ++] = square | ((square - 2) << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT);
+                }
+            }
+        }
+        return moveListLength;
+    }
+
+    private static int getKnightMoves2(long[] board, long[] moves, int piece, int moveListLength, long allOccupancy, long otherOccupancy, boolean tactical) {
+        long knightBitboard = board[piece];
+        int square;
+        long knightAttacks;
+        long moveBitboard;
+        int targetSquare;
+        while(knightBitboard != 0L) {
+            square = Long.numberOfTrailingZeros(knightBitboard);
+            knightBitboard &= knightBitboard - 1;
+            knightAttacks = B.BB[B.LEAP_ATTACKS][square];
+            moveBitboard = knightAttacks & otherOccupancy;
+            while(moveBitboard != 0L) {
+                targetSquare = Long.numberOfTrailingZeros(moveBitboard);
+                moveBitboard &= moveBitboard - 1;
+                moves[moveListLength ++] = square | (targetSquare << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT) | (Board.getSquare(board, targetSquare) << Board.TARGET_PIECE_SHIFT);
+            }
+            if(tactical) continue;
+            moveBitboard = knightAttacks & ~allOccupancy;
+            while(moveBitboard != 0L) {
+                moves[moveListLength ++] = square | (Long.numberOfTrailingZeros(moveBitboard) << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT);
+                moveBitboard &= moveBitboard - 1;
+            }
+        }
+        return moveListLength;
+    }
+
+    private static int getPawnMoves2(long[] board, long[] moves, int piece, int moveListLength, int player, long allOccupancy, long otherOccupancy, boolean tactical) {
+        long pawnBitboard = board[piece];
+        int playerBit = player << Board.PLAYER_SHIFT;
+        int square;
+        int eSquare = (int) board[Board.STATUS] >>> Board.ESQUARE_SHIFT & Board.SQUARE_BITS;
+        otherOccupancy |= (eSquare > 0 ? (1L << eSquare) : 0L);
+        int pawnAttacks = B.PAWN_ATTACKS_PLAYER0 + player;
+        int targetSquare;
+        int targetRank;
+        int moveInfo;
+        long moveBitboard;
+        int pawnAdvanceSingle = B.PAWN_ADVANCE_1_PLAYER0 + player;
+        int pawnAdvanceDouble = B.PAWN_ADVANCE_2_PLAYER0 + player;
+        while(pawnBitboard != 0L) {
+            square = Long.numberOfTrailingZeros(pawnBitboard);
+            pawnBitboard &= pawnBitboard - 1;
+            moveBitboard = B.BB[pawnAttacks][square] & otherOccupancy;
+            while(moveBitboard != 0L) {
+                targetSquare = Long.numberOfTrailingZeros(moveBitboard);
+                moveBitboard &= moveBitboard - 1;
+                targetRank = targetSquare >>> 3;
+                if(targetRank == (player == Value.WHITE ? 7 : 0)) {
+                    moveInfo = square | (targetSquare << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT) | (Board.getSquare(board, targetSquare) << Board.TARGET_PIECE_SHIFT);
+                    moves[moveListLength++] = moveInfo | ((Piece.ROOK | playerBit) << Board.PROMOTE_PIECE_SHIFT);
+                    moves[moveListLength++] = moveInfo | ((Piece.BISHOP | playerBit) << Board.PROMOTE_PIECE_SHIFT);
+                    moves[moveListLength++] = moveInfo | ((Piece.KNIGHT | playerBit) << Board.PROMOTE_PIECE_SHIFT);
+                    moves[moveListLength++] = moveInfo | ((Piece.QUEEN | playerBit) << Board.PROMOTE_PIECE_SHIFT);
+                } else {
+                    moves[moveListLength ++] = square | (targetSquare << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT) | (Board.getSquare(board, targetSquare) << Board.TARGET_PIECE_SHIFT);
+                }
+            }
+            if(tactical) continue;
+            moveBitboard = B.BB[pawnAdvanceSingle][square] & ~allOccupancy;
+            if(moveBitboard != 0L) {
+                moveBitboard = (moveBitboard | B.BB[pawnAdvanceDouble][square]) & ~allOccupancy;
+            }
+            while(moveBitboard != 0L) {
+                targetSquare = Long.numberOfTrailingZeros(moveBitboard);
+                moveBitboard &= moveBitboard - 1;
+                targetRank = targetSquare >>> 3;
+                if(targetRank == (player == Value.WHITE ? 7 : 0)) {
+                    moveInfo = square | (targetSquare << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT);
+                    moves[moveListLength++] = moveInfo | ((Piece.ROOK | playerBit) << Board.PROMOTE_PIECE_SHIFT);
+                    moves[moveListLength++] = moveInfo | ((Piece.BISHOP | playerBit) << Board.PROMOTE_PIECE_SHIFT);
+                    moves[moveListLength++] = moveInfo | ((Piece.KNIGHT | playerBit) << Board.PROMOTE_PIECE_SHIFT);
+                    moves[moveListLength++] = moveInfo | ((Piece.QUEEN | playerBit) << Board.PROMOTE_PIECE_SHIFT);
+                } else {
+                    moves[moveListLength ++] = square | (targetSquare << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT);
+                }
+            }
+        }
+        return moveListLength;
+    }
+
+    private static int getQueenMoves2(long[] board, long[] moves, int piece, int player, int moveListLength, long allOccupancy, long otherOccupancy, boolean tactical) {
+        long queenBitboard = board[piece];
+        int square;
+        long moveBitboard;
+        long magic;
+        int targetSquare;
+        while(queenBitboard != 0L) {
+            square = Long.numberOfTrailingZeros(queenBitboard);
+            queenBitboard &= queenBitboard - 1;
+            magic = Magic.queenMoves(square, allOccupancy);
+            moveBitboard = magic & otherOccupancy;
+            while(moveBitboard != 0L) {
+                targetSquare = Long.numberOfTrailingZeros(moveBitboard);
+                moveBitboard &= moveBitboard - 1;
+                moves[moveListLength ++] = square | (targetSquare << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT) | (Board.getSquare(board, targetSquare) << Board.TARGET_PIECE_SHIFT);
+            }
+            if(tactical) continue;
+            moveBitboard = magic & ~allOccupancy;
+            while(moveBitboard != 0L) {
+                moves[moveListLength ++] = square | (Long.numberOfTrailingZeros(moveBitboard) << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT);
+                moveBitboard &= moveBitboard - 1;
+            }
+        }
+        return moveListLength;
+    }
+
+    private static int getRookMoves2(long[] board, long[] moves, int piece, int player, int moveListLength, long allOccupancy, long otherOccupancy, boolean tactical) {
+        long rookBitboard = board[piece];
+        int square;
+        long moveBitboard;
+        long magic;
+        int targetSquare;
+        while(rookBitboard != 0L) {
+            square = Long.numberOfTrailingZeros(rookBitboard);
+            rookBitboard &= rookBitboard - 1;
+            magic = Magic.rookMoves(square, allOccupancy);
+            moveBitboard = magic & otherOccupancy;
+            while(moveBitboard != 0L) {
+                targetSquare = Long.numberOfTrailingZeros(moveBitboard);
+                moveBitboard &= moveBitboard - 1;
+                moves[moveListLength ++] = square | (targetSquare << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT) | (Board.getSquare(board, targetSquare) << Board.TARGET_PIECE_SHIFT);
+            }
+            if(tactical) continue;
+            moveBitboard = magic & ~allOccupancy;
+            while(moveBitboard != 0L) {
+                moves[moveListLength ++] = square | (Long.numberOfTrailingZeros(moveBitboard) << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT);
+                moveBitboard &= moveBitboard - 1;
+            }
+        }
+        return moveListLength;
+    }
+
+    private static int getBishopMoves2(long[] board, long[] moves, int piece, int player, int moveListLength, long allOccupancy, long otherOccupancy, boolean tactical) {
+        long bishopBitboard = board[piece];
+        int square;
+        long moveBitboard;
+        long magic;
+        int targetSquare;
+        while(bishopBitboard != 0L) {
+            square = Long.numberOfTrailingZeros(bishopBitboard);
+            bishopBitboard &= bishopBitboard - 1;
+            magic = Magic.bishopMoves(square, allOccupancy);
+            moveBitboard = magic & otherOccupancy;
+            while(moveBitboard != 0L) {
+                targetSquare = Long.numberOfTrailingZeros(moveBitboard);
+                moveBitboard &= moveBitboard - 1;
+                moves[moveListLength ++] = square | (targetSquare << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT) | (Board.getSquare(board, targetSquare) << Board.TARGET_PIECE_SHIFT);
+            }
+            if(tactical) continue;
+            moveBitboard = magic & ~allOccupancy;
+            while(moveBitboard != 0L) {
+                moves[moveListLength ++] = square | (Long.numberOfTrailingZeros(moveBitboard) << Board.TARGET_SQUARE_SHIFT) | (piece << Board.START_PIECE_SHIFT);
+                moveBitboard &= moveBitboard - 1;
+            }
         }
         return moveListLength;
     }
