@@ -20,8 +20,9 @@ public enum Game {
     INSTANCE;
 
     public void run() {
-        init();
-        loop();
+        Perft.all();
+        //init();
+        //loop();
         //test();
     }
 
@@ -232,6 +233,6 @@ public enum Game {
     }
 
     private void test() {
-        SearchTest.test();
+        Perft.fen("r1bqkbnr/pppppppp/n7/8/8/N7/PPPPPPPP/R1BQKBNR w KQkq - 0 1", 1);
     }
 }
