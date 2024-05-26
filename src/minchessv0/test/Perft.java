@@ -131,26 +131,30 @@ public class Perft {
     private final static long perftSearchSpeed(long[] board, int depth, int maxDepth, int maxNum) {
         if(depth == 0) return 1;
         long nodes = 0L;
-        long tempNodes = 0L;
+        //long tempNodes = 0L;
         long[] moves = Gen.gen(board, false, false);
         int maxMoves = (int) moves[99];
         int player = (int) board[Board.STATUS] & Board.PLAYER_BIT;
-        int legalMoveNum = 0;
-        String moveString = "";
-        long currentTime = 0L;
+        //int legalMoveNum = 0;
+        //String moveString = "";
+        //long currentTime = 0L;
         for(int move = 0; move < maxMoves; move ++) {
             long[] boardAfterMove = Board.makeMove(board, moves[move]);
             if(Board.isPlayerInCheck(boardAfterMove, player)) continue;
+            /*
             if(depth == maxDepth) {
                 moveString = Move.string(moves[move]);
                 print(" " + ((++ legalMoveNum <= 9) ? " " : "") + legalMoveNum + "/" + maxNum + " " + (moveString.length() == 4 ? " " : "") + moveString + ": ");
             }
-            tempNodes = nodes;
-            currentTime = System.currentTimeMillis();
+            */
+            //tempNodes = nodes;
+            //currentTime = System.currentTimeMillis();
             nodes += perftSearchSpeed(boardAfterMove, depth - 1, maxDepth, maxNum);
+            /*
             if(depth == maxDepth) {
                 println("" + (nodes - tempNodes) + "   Elapsed: " + (System.currentTimeMillis() - currentTime));
             }
+            */
         }
         return nodes;
     }
