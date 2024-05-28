@@ -104,10 +104,10 @@ public class Eval implements Evaluator {
             }
         }
         for(int num = 1; num < 4; num ++) {
-            PAWN_SHIELD_CLOSE_VALUE[num] = num * 10;
-            PAWN_SHIELD_FAR_VALUE[num] = num * 5;
-            PAWN_STORM_CLOSE_VALUE[num] = num * 7;
-            PAWN_STORM_FAR_VALUE[num] = num * 3;
+            PAWN_SHIELD_CLOSE_VALUE[num] = num * Criteria.VALUE[Criteria.PAWN_SHIELD_CLOSE];
+            PAWN_SHIELD_FAR_VALUE[num] = num * Criteria.VALUE[Criteria.PAWN_SHIELD_FAR];
+            PAWN_STORM_CLOSE_VALUE[num] = num * Criteria.VALUE[Criteria.PAWN_STORM_CLOSE];
+            PAWN_STORM_FAR_VALUE[num] = num * Criteria.VALUE[Criteria.PAWN_STORM_FAR];
         }
         for(int rooks = 1; rooks < 11; rooks ++) {
             for(int pawns = 0; pawns < 9; pawns ++) {
@@ -126,6 +126,24 @@ public class Eval implements Evaluator {
         }
     }
 
+    private static final int ROOK_PROTECTS = Criteria.VALUE[Criteria.ROOK_PROTECTS];
+    private static final int KING_BLOCKS_ROOK = Criteria.VALUE[Criteria.KING_BLOCKS_ROOK];
+    private static final int QUEEN_EARLY_DEVELOPMENT = Criteria.VALUE[Criteria.QUEEN_EARLY_DEVELOPMENT];
+    private static final int ROOK_EARLY_DEVELOPMENT = Criteria.VALUE[Criteria.ROOK_EARLY_DEVELOPMENT];
+    private static final int ROOK_PAIR = Criteria.VALUE[Criteria.ROOK_PAIR];
+    private static final int ROOK_OPEN_FILE = Criteria.VALUE[Criteria.ROOK_OPEN_FILE];
+    private static final int ROOK_ON_QUEEN_FILE = Criteria.VALUE[Criteria.ROOK_ON_QUEEN_FILE];
+    private static final int BISHOP_PAIR = Criteria.VALUE[Criteria.BISHOP_PAIR];
+    private static final int BISHOP_OUTPOST = Criteria.VALUE[Criteria.BISHOP_OUTPOST];
+    private static final int KNIGHT_PAIR = Criteria.VALUE[Criteria.KNIGHT_PAIR];
+    private static final int KNIGHT_OUTPOST = Criteria.VALUE[Criteria.KNIGHT_OUTPOST];
+    private static final int DOUBLED_PAWN = Criteria.VALUE[Criteria.DOUBLED_PAWN];
+    private static final int WEAK_PAWN = Criteria.VALUE[Criteria.WEAK_PAWN];
+    private static final int ISOLATED_PAWN = Criteria.VALUE[Criteria.ISOLATED_PAWN];
+    private static final int PAWN_PROTECTS = Criteria.VALUE[Criteria.PAWN_PROTECTS];
+    private static final int PAWN_STORM_OWN_KING_OPPOSITE = Criteria.VALUE[Criteria.PAWN_STORM_OWN_KING_OPPOSITE];
+    private static final int PASSED_PAWN_PHALANX = Criteria.VALUE[Criteria.PASSED_PAWN_PHALANX];
+
     private long[] board;
     private int playerToMove;
     private long allOccupancy;
@@ -142,7 +160,7 @@ public class Eval implements Evaluator {
         if(kingRank == (player == Value.WHITE ? 0 : 7)) {
             switch(this.playerKingFile[player]) {
                 case 0: {
-                    if(((player == 0 ? 0x000000000000000eL : 0x0e00000000000000L) & rookBitboard) != 0L) eval += 30;
+                    if(((player == 0 ? 0x000000000000000eL : 0x0e00000000000000L) & rookBitboard) != 0L) eval += ROOK_PROTECTS;
                     eval += PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)] +
                             PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)] -
                             PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)] -
@@ -150,8 +168,8 @@ public class Eval implements Evaluator {
                     break;
                 }
                 case 1: {
-                    if(((player == 0 ? 0x000000000000000cL : 0x0c00000000000000L) & rookBitboard) != 0L) eval += 30;
-                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x0100000000000001L & rookBitboard) != 0L) eval -= 30;
+                    if(((player == 0 ? 0x000000000000000cL : 0x0c00000000000000L) & rookBitboard) != 0L) eval += ROOK_PROTECTS;
+                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x0100000000000001L & rookBitboard) != 0L) eval -= KING_BLOCKS_ROOK;
                     eval += PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)] +
                             PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)] -
                             PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)] -
@@ -159,8 +177,8 @@ public class Eval implements Evaluator {
                     break;
                 }
                 case 2: {
-                    if(((player == 0 ? 0x0000000000000008L : 0x0800000000000000L) & rookBitboard) != 0L) eval += 30;
-                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x0100000000000001L & rookBitboard) != 0L) eval -= 30;
+                    if(((player == 0 ? 0x0000000000000008L : 0x0800000000000000L) & rookBitboard) != 0L) eval += ROOK_PROTECTS;
+                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x0100000000000001L & rookBitboard) != 0L) eval -= KING_BLOCKS_ROOK;
                     eval += PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)] +
                             PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)] -
                             PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)] -
@@ -168,14 +186,14 @@ public class Eval implements Evaluator {
                     break;
                 }
                 case 3: {
-                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x0100000000000001L & rookBitboard) != 0L) eval -= 30;
+                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x0100000000000001L & rookBitboard) != 0L) eval -= KING_BLOCKS_ROOK;
                     break;
                 }
                 case 4: {
                     break;
                 }
                 case 5: {
-                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x8000000000000080L & rookBitboard) != 0L) eval -= 30;
+                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x8000000000000080L & rookBitboard) != 0L) eval -= KING_BLOCKS_ROOK;
                     eval += PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)] +
                             PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)] -
                             PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)] -
@@ -183,8 +201,8 @@ public class Eval implements Evaluator {
                     break;
                 }
                 case 6: {
-                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x8000000000000080L & rookBitboard) != 0L) eval -= 30;
-                    if(((player == 0 ? 0x0000000000000020L : 0x2000000000000000L) & rookBitboard) != 0L) eval += 30;
+                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x8000000000000080L & rookBitboard) != 0L) eval -= KING_BLOCKS_ROOK;
+                    if(((player == 0 ? 0x0000000000000020L : 0x2000000000000000L) & rookBitboard) != 0L) eval += ROOK_PROTECTS;
                     eval += PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)] +
                             PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)] -
                             PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)] -
@@ -192,8 +210,8 @@ public class Eval implements Evaluator {
                     break;
                 }
                 case 7: {
-                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x8000000000000080L & rookBitboard) != 0L) eval -= 30;
-                    if(((player == 0 ? 0x0000000000000060L : 0x6000000000000000L) & rookBitboard) != 0L) eval += 30;
+                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x8000000000000080L & rookBitboard) != 0L) eval -= KING_BLOCKS_ROOK;
+                    if(((player == 0 ? 0x0000000000000060L : 0x6000000000000000L) & rookBitboard) != 0L) eval += ROOK_PROTECTS;
                     eval += PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)] +
                             PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)] -
                             PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)] -
@@ -222,7 +240,7 @@ public class Eval implements Evaluator {
         // early development
         if((bitboard & B.BB[B.QUEEN_START_POSITION_PLAYER0 + player][0]) == 0L &&
            (bishopBitboard & B.BB[B.BISHOP_START_POSITION_PLAYER0 + player][0]) != 0L &&
-           (knightBitboard & B.BB[B.KNIGHT_START_POSITION_PLAYER0 + player][0]) != 0L) eval -= 30;
+           (knightBitboard & B.BB[B.KNIGHT_START_POSITION_PLAYER0 + player][0]) != 0L) eval -= QUEEN_EARLY_DEVELOPMENT;
         int square;
         long queenAttacks;
         for(; bitboard != 0L; bitboard &= bitboard - 1) {
@@ -245,9 +263,9 @@ public class Eval implements Evaluator {
         int numRooks = Long.bitCount(bitboard);
         int eval = PIECE_VALUE[Piece.ROOK][numRooks];
         // early development
-        if(Long.bitCount(bitboard & B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0]) < 2 && (kingBitboard & B.BB[B.KING_START_POSITION_PLAYER0 + player][0]) != 0L) eval -= 30;
+        if(Long.bitCount(bitboard & B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0]) < 2 && (kingBitboard & B.BB[B.KING_START_POSITION_PLAYER0 + player][0]) != 0L) eval -= ROOK_EARLY_DEVELOPMENT;
         // rook pair
-        eval += (numRooks > 1 ? -14 : 0);
+        eval += (numRooks > 1 ? -ROOK_PAIR : 0);
         // rooks and pawns
         int numPawns = Long.bitCount(pawnBitboard);
 		eval += ROOK_PAWN_VALUE[numRooks][numPawns];
@@ -263,9 +281,9 @@ public class Eval implements Evaluator {
             eval += MOBILITY_VALUE[Piece.ROOK][Long.bitCount(rookAttacks)];
             // rook open file
             rookFile = square & 7;
-            eval += ((pawnBitboard & B.BB[B.FILE][rookFile]) == 0L ? 14 : 0) + ((otherPawnBitboard & B.BB[B.FILE][rookFile]) == 0L ? 14 : 0);
+            eval += ((pawnBitboard & B.BB[B.FILE][rookFile]) == 0L ? ROOK_OPEN_FILE : 0) + ((otherPawnBitboard & B.BB[B.FILE][rookFile]) == 0L ? ROOK_OPEN_FILE : 0);
             // rook on other queen file
-            eval += (otherQueenBitboard & B.BB[B.FILE][rookFile]) != 0L ? 11 : 0;
+            eval += (otherQueenBitboard & B.BB[B.FILE][rookFile]) != 0L ? ROOK_ON_QUEEN_FILE : 0;
             // other king safety
             eval += KING_SAFETY_VALUE[Piece.ROOK][Long.bitCount(rookAttacks & B.BB[B.KING_RING_PLAYER1 - player][0])];
             // other king distance
@@ -279,7 +297,7 @@ public class Eval implements Evaluator {
         int numBishops = Long.bitCount(bitboard);
         int eval = PIECE_VALUE[Piece.BISHOP][numBishops];
         // bishop pair
-        eval += (numBishops > 1 ? 39 : 0);
+        eval += (numBishops > 1 ? BISHOP_PAIR : 0);
         int square;
         long bishopAttacks;
         int bishopFile;
@@ -296,7 +314,7 @@ public class Eval implements Evaluator {
             bishopFile = square & 7;
             bishopRank = square >>> 3;
             if((B.BB[B.PAWN_ATTACKS_PLAYER1 - player][square] & pawnBitboard) != 0L) {
-                if((B.BB[B.PASSED_PAWNS_FILES_PLAYER0 + player][bishopFile] & B.BB[B.FORWARD_RANKS_PLAYER0 + player][bishopRank] & otherPawnBitboard) == 0L) eval += 14;
+                if((B.BB[B.PASSED_PAWNS_FILES_PLAYER0 + player][bishopFile] & B.BB[B.FORWARD_RANKS_PLAYER0 + player][bishopRank] & otherPawnBitboard) == 0L) eval += BISHOP_OUTPOST;
             }
             // bad bishop
             squareColorBitboard = (B.BB[B.SQUARE_COLOR_LIGHT][0] & (1L << square)) != 0L ? B.BB[B.SQUARE_COLOR_LIGHT][0] : B.BB[B.SQUARE_COLOR_DARK][0];
@@ -316,7 +334,7 @@ public class Eval implements Evaluator {
         int numKnights = Long.bitCount(bitboard);
         int eval = PIECE_VALUE[Piece.KNIGHT][numKnights];
         // knight pair
-        eval -= (numKnights > 1 ? 14 : 0);
+        eval -= (numKnights > 1 ? KNIGHT_PAIR : 0);
         // knight and pawns
         int numPawns = Long.bitCount(pawnBitboard);
         eval += KNIGHT_PAWN_VALUE[numKnights][numPawns];
@@ -335,7 +353,7 @@ public class Eval implements Evaluator {
             knightFile = square & 7;
             knightRank = square >>> 3;
             if((B.BB[B.PAWN_ATTACKS_PLAYER1 - player][square] & pawnBitboard) != 0L) {
-                if((B.BB[B.PASSED_PAWNS_FILES_PLAYER0 + player][knightFile] & B.BB[B.FORWARD_RANKS_PLAYER0 + player][knightRank] & otherPawnBitboard) == 0L) eval += 21;
+                if((B.BB[B.PASSED_PAWNS_FILES_PLAYER0 + player][knightFile] & B.BB[B.FORWARD_RANKS_PLAYER0 + player][knightRank] & otherPawnBitboard) == 0L) eval += KNIGHT_OUTPOST;
             }
             // own king distance
             eval -= (Math.abs(knightRank - playerKingRank[player]) + Math.abs(knightFile - playerKingFile[player]));
@@ -367,22 +385,22 @@ public class Eval implements Evaluator {
             // doubled pawns
             pawnFile = square & 7;
             pawnFileBitboard = B.BB[B.FILE][pawnFile];
-            if(Long.bitCount(bitboard & pawnFileBitboard) > 1) eval -= 11;
+            if(Long.bitCount(bitboard & pawnFileBitboard) > 1) eval -= DOUBLED_PAWN;
             // weak pawn
             pawnRank = square >>> 3;
             adjacentFilesBitboard = (pawnFile > 0 ? B.BB[B.FILE][pawnFile - 1] : 0L) | (pawnFile < 7 ? B.BB[B.FILE][pawnFile + 1] : 0L);
             adjacentFilePawns = originalBitboard & adjacentFilesBitboard;
-            if((adjacentFilePawns & B.BB[B.FORWARD_RANKS_PLAYER1 - player][pawnRank]) == 0L) eval -= 11;
+            if((adjacentFilePawns & B.BB[B.FORWARD_RANKS_PLAYER1 - player][pawnRank]) == 0L) eval -= WEAK_PAWN;
             // isolated pawn
-            if(adjacentFilePawns == 0L) eval -= 11;
+            if(adjacentFilePawns == 0L) eval -= ISOLATED_PAWN;
             // pawn protects
-            if((B.BB[B.PAWN_ATTACKS_PLAYER0 + player][square] & this.playerOccupancy[player]) != 0L) eval += 7;
+            if((B.BB[B.PAWN_ATTACKS_PLAYER0 + player][square] & this.playerOccupancy[player]) != 0L) eval += PAWN_PROTECTS;
             // pawn storm when own king on opposite side
             if(pawnFile < 3) {
-                if(playerKingFile[player] > 4) eval += 28;
+                if(playerKingFile[player] > 4) eval += PAWN_STORM_OWN_KING_OPPOSITE;
             }
             if(pawnFile > 4) {
-                if(playerKingFile[player] < 3) eval += 28;
+                if(playerKingFile[player] < 3) eval += PAWN_STORM_OWN_KING_OPPOSITE;
             }
             // passed pawn
             forwardRanksBitboard = B.BB[B.FORWARD_RANKS_PLAYER0 + player][pawnRank];
@@ -391,7 +409,7 @@ public class Eval implements Evaluator {
                 // additional piece square bonus
                 eval += Psqt.BONUS[Piece.PAWN][player][square][phase];
                 // phalanx
-                eval += (originalBitboard & adjacentFilesBitboard & B.BB[B.RANK][pawnRank]) > 0L ? 11 : 0;
+                eval += (originalBitboard & adjacentFilesBitboard & B.BB[B.RANK][pawnRank]) > 0L ? PASSED_PAWN_PHALANX : 0;
                 // other king stops pawn when other has no material
                 int pawnPromoteDist = Math.abs((player == 0 ? 7 : 0) - pawnRank) + (pawnRank == (player == 0 ? 1 : 6) ? 1 : 0);
 				int otherKingDistFromPromote = Math.max(Math.abs((player == 0 ? 7 : 0) - playerKingRank[other]), Math.abs(pawnFile - playerKingFile[other]));
