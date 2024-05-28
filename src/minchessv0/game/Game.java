@@ -20,10 +20,10 @@ public enum Game {
     INSTANCE;
 
     public void run() {
-        Perft.all();
+        //Perft.all();
         //init();
         //loop();
-        //test();
+        test();
     }
 
     public void sendCommand(String command) {
@@ -233,6 +233,6 @@ public enum Game {
     }
 
     private void test() {
-        Perft.fen("r1bqkbnr/pppppppp/n7/8/8/N7/PPPPPPPP/R1BQKBNR w KQkq - 0 1", 1);
+        EvalTest.test();
     }
 }
