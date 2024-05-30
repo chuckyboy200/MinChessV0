@@ -24,10 +24,10 @@ public class Eval implements Evaluator {
         this.playerKingSquare[1] = Long.numberOfTrailingZeros(board[Piece.BLACK_KING]);
         this.playerKingRank[1] = this.playerKingSquare[1] >>> 3;
         this.playerKingFile[1] = this.playerKingSquare[1] & 7;
-        this.phase = Math.min((Long.bitCount(board[Piece.WHITE_QUEEN]) + Long.bitCount(board[Piece.BLACK_QUEEN])) * 4 +
+        this.phase = Math.min(24 - ((Long.bitCount(board[Piece.WHITE_QUEEN]) + Long.bitCount(board[Piece.BLACK_QUEEN])) * 4 +
                      (Long.bitCount(board[Piece.WHITE_ROOK])  + Long.bitCount(board[Piece.BLACK_ROOK]))  * 2 +
                      Long.bitCount(board[Piece.WHITE_BISHOP]) + Long.bitCount(board[Piece.BLACK_BISHOP]) +
-                     Long.bitCount(board[Piece.WHITE_KNIGHT]) + Long.bitCount(board[Piece.BLACK_KNIGHT]), 24);
+                     Long.bitCount(board[Piece.WHITE_KNIGHT]) + Long.bitCount(board[Piece.BLACK_KNIGHT])), 24);
     }
 
     @Override
@@ -390,7 +390,7 @@ public class Eval implements Evaluator {
             pawnRank = square >>> 3;
             adjacentFilesBitboard = (pawnFile > 0 ? B.BB[B.FILE][pawnFile - 1] : 0L) | (pawnFile < 7 ? B.BB[B.FILE][pawnFile + 1] : 0L);
             adjacentFilePawns = originalBitboard & adjacentFilesBitboard;
-            if((adjacentFilePawns & B.BB[B.FORWARD_RANKS_PLAYER1 - player][pawnRank]) == 0L) eval -= WEAK_PAWN;
+            if((adjacentFilePawns & B.BB[B.FORWARD_RANKS_PLAYER1 - player][player == 0 ? pawnRank + 1 : pawnRank - 1]) == 0L) eval -= WEAK_PAWN;
             // isolated pawn
             if(adjacentFilePawns == 0L) eval -= ISOLATED_PAWN;
             // pawn protects
