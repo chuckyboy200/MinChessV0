@@ -9,7 +9,7 @@ public class SearchTest {
     public static void test() {
         long[] board = Board.startingPosition();
         Board.drawText(board);
-        SearchParallelTest search = new SearchParallelTest(board, 8, 1000000);
+        SearchParallelTest2 search = new SearchParallelTest2(board, 6, 1000000, false);
         search.run();
     }
 
