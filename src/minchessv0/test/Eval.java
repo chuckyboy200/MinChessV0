@@ -27,16 +27,16 @@ public class Eval {
         this.playerKingSquare[1] = Long.numberOfTrailingZeros(board[Piece.BLACK_KING]);
         this.playerKingRank[1] = this.playerKingSquare[1] >>> 3;
         this.playerKingFile[1] = this.playerKingSquare[1] & 7;
-        this.phase = Math.min((Long.bitCount(board[Piece.WHITE_QUEEN]) + Long.bitCount(board[Piece.BLACK_QUEEN])) * 4 +
+        this.phase = Math.max(0, Math.min(24 - ((Long.bitCount(board[Piece.WHITE_QUEEN]) + Long.bitCount(board[Piece.BLACK_QUEEN])) * 4 +
                      (Long.bitCount(board[Piece.WHITE_ROOK])  + Long.bitCount(board[Piece.BLACK_ROOK]))  * 2 +
                      Long.bitCount(board[Piece.WHITE_BISHOP]) + Long.bitCount(board[Piece.BLACK_BISHOP]) +
-                     Long.bitCount(board[Piece.WHITE_KNIGHT]) + Long.bitCount(board[Piece.BLACK_KNIGHT]), 24);
+                     Long.bitCount(board[Piece.WHITE_KNIGHT]) + Long.bitCount(board[Piece.BLACK_KNIGHT])), 24));
         this.hasEvaluated = false;
     }
 
     public int eval() {
         if(!this.hasEvaluated) evaluateScore();
-        return this.score.eval(this.playerToMove) - this.score.eval(1 ^ this.playerToMove);
+        return this.score.eval();
     }
 
     public Score score() {
@@ -45,7 +45,7 @@ public class Eval {
     }
 
     public void evaluateScore() {
-        this.score = new Score();
+        this.score = new Score(this.playerToMove, 0);
         kingEval(Value.WHITE, Value.BLACK, board[Piece.WHITE_ROOK], board[Piece.WHITE_PAWN], board[Piece.BLACK_PAWN]);
         queenEval(Value.WHITE, Value.BLACK, board[Piece.WHITE_QUEEN], board[Piece.WHITE_BISHOP], board[Piece.WHITE_KNIGHT]);
         rookEval(Value.WHITE, Value.BLACK, board[Piece.WHITE_ROOK], board[Piece.WHITE_KING], board[Piece.WHITE_PAWN], board[Piece.BLACK_PAWN], board[Piece.BLACK_QUEEN]);
@@ -175,62 +175,62 @@ public class Eval {
         if(kingRank == (player == Value.WHITE ? 0 : 7)) {
             switch(this.playerKingFile[player]) {
                 case 0: {
-                    if(((player == 0 ? 0x000000000000000eL : 0x0e00000000000000L) & rookBitboard) != 0L) score.addCriteria(player, Criteria.ROOK_PROTECTS, ROOK_PROTECTS);
-                    score.addCriteria(player, Criteria.PAWN_SHIELD_CLOSE, PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_SHIELD_FAR, PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_STORM_CLOSE, -PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_STORM_FAR, -PAWN_STORM_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_FAR_PLAYER1 - player][0] & otherPawnBitboard)]);
+                    if(((player == 0 ? 0x000000000000000eL : 0x0e00000000000000L) & rookBitboard) != 0L) score.addCriteria(board, player, Criteria.ROOK_PROTECTS, ROOK_PROTECTS);
+                    score.addCriteria(board, player, Criteria.PAWN_SHIELD_CLOSE, PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_SHIELD_FAR, PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_STORM_CLOSE, -PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_STORM_FAR, -PAWN_STORM_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_FAR_PLAYER1 - player][0] & otherPawnBitboard)]);
                     break;
                 }
                 case 1: {
-                    if(((player == 0 ? 0x000000000000000cL : 0x0c00000000000000L) & rookBitboard) != 0L) score.addCriteria(player, Criteria.ROOK_PROTECTS, ROOK_PROTECTS);
-                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x0100000000000001L & rookBitboard) != 0L) score.addCriteria(player, Criteria.KING_BLOCKS_ROOK, -KING_BLOCKS_ROOK);
-                    score.addCriteria(player, Criteria.PAWN_SHIELD_CLOSE, PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_SHIELD_FAR, PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_STORM_CLOSE, -PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_STORM_FAR, -PAWN_STORM_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_FAR_PLAYER1 - player][0] & otherPawnBitboard)]);
+                    if(((player == 0 ? 0x000000000000000cL : 0x0c00000000000000L) & rookBitboard) != 0L) score.addCriteria(board, player, Criteria.ROOK_PROTECTS, ROOK_PROTECTS);
+                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x0100000000000001L & rookBitboard) != 0L) score.addCriteria(board, player, Criteria.KING_BLOCKS_ROOK, -KING_BLOCKS_ROOK);
+                    score.addCriteria(board, player, Criteria.PAWN_SHIELD_CLOSE, PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_SHIELD_FAR, PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_STORM_CLOSE, -PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_STORM_FAR, -PAWN_STORM_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_FAR_PLAYER1 - player][0] & otherPawnBitboard)]);
                     break;
                 }
                 case 2: {
-                    if(((player == 0 ? 0x0000000000000008L : 0x0800000000000000L) & rookBitboard) != 0L) score.addCriteria(player, Criteria.ROOK_PROTECTS, ROOK_PROTECTS);
-                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x0100000000000001L & rookBitboard) != 0L) score.addCriteria(player, Criteria.KING_BLOCKS_ROOK, -KING_BLOCKS_ROOK);
-                    score.addCriteria(player, Criteria.PAWN_SHIELD_CLOSE, PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_SHIELD_FAR, PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_STORM_CLOSE, -PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_STORM_FAR, -PAWN_STORM_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_FAR_PLAYER1 - player][0] & otherPawnBitboard)]);
+                    if(((player == 0 ? 0x0000000000000008L : 0x0800000000000000L) & rookBitboard) != 0L) score.addCriteria(board, player, Criteria.ROOK_PROTECTS, ROOK_PROTECTS);
+                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x0100000000000001L & rookBitboard) != 0L) score.addCriteria(board, player, Criteria.KING_BLOCKS_ROOK, -KING_BLOCKS_ROOK);
+                    score.addCriteria(board, player, Criteria.PAWN_SHIELD_CLOSE, PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_SHIELD_FAR, PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_QUEENSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_STORM_CLOSE, -PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_STORM_FAR, -PAWN_STORM_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_QUEENSIDE_FAR_PLAYER1 - player][0] & otherPawnBitboard)]);
                     break;
                 }
                 case 3: {
-                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x0100000000000001L & rookBitboard) != 0L) score.addCriteria(player, Criteria.KING_BLOCKS_ROOK, -KING_BLOCKS_ROOK);
+                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x0100000000000001L & rookBitboard) != 0L) score.addCriteria(board, player, Criteria.KING_BLOCKS_ROOK, -KING_BLOCKS_ROOK);
                     break;
                 }
                 case 4: {
                     break;
                 }
                 case 5: {
-                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x8000000000000080L & rookBitboard) != 0L) score.addCriteria(player, Criteria.KING_BLOCKS_ROOK, -KING_BLOCKS_ROOK);
-                    score.addCriteria(player, Criteria.PAWN_SHIELD_CLOSE, PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_SHIELD_FAR, PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_STORM_CLOSE, -PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_STORM_FAR, -PAWN_STORM_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_FAR_PLAYER1 - player][0] & otherPawnBitboard)]);
+                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x8000000000000080L & rookBitboard) != 0L) score.addCriteria(board, player, Criteria.KING_BLOCKS_ROOK, -KING_BLOCKS_ROOK);
+                    score.addCriteria(board, player, Criteria.PAWN_SHIELD_CLOSE, PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_SHIELD_FAR, PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_STORM_CLOSE, -PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_STORM_FAR, -PAWN_STORM_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_FAR_PLAYER1 - player][0] & otherPawnBitboard)]);
                     break;
                 }
                 case 6: {
-                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x8000000000000080L & rookBitboard) != 0L) score.addCriteria(player, Criteria.KING_BLOCKS_ROOK, -KING_BLOCKS_ROOK);
-                    if(((player == 0 ? 0x0000000000000020L : 0x2000000000000000L) & rookBitboard) != 0L) score.addCriteria(player, Criteria.ROOK_PROTECTS, ROOK_PROTECTS);
-                    score.addCriteria(player, Criteria.PAWN_SHIELD_CLOSE, PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_SHIELD_FAR, PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_STORM_CLOSE, -PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_STORM_FAR, -PAWN_STORM_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_FAR_PLAYER1 - player][0] & otherPawnBitboard)]);
+                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x8000000000000080L & rookBitboard) != 0L) score.addCriteria(board, player, Criteria.KING_BLOCKS_ROOK, -KING_BLOCKS_ROOK);
+                    if(((player == 0 ? 0x0000000000000020L : 0x2000000000000000L) & rookBitboard) != 0L) score.addCriteria(board, player, Criteria.ROOK_PROTECTS, ROOK_PROTECTS);
+                    score.addCriteria(board, player, Criteria.PAWN_SHIELD_CLOSE, PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_SHIELD_FAR, PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_STORM_CLOSE, -PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_STORM_FAR, -PAWN_STORM_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_FAR_PLAYER1 - player][0] & otherPawnBitboard)]);
                     break;
                 }
                 case 7: {
-                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x8000000000000080L & rookBitboard) != 0L) score.addCriteria(player, Criteria.KING_BLOCKS_ROOK, -KING_BLOCKS_ROOK);
-                    if(((player == 0 ? 0x0000000000000060L : 0x6000000000000000L) & rookBitboard) != 0L) score.addCriteria(player, Criteria.ROOK_PROTECTS, ROOK_PROTECTS);
-                    score.addCriteria(player, Criteria.PAWN_SHIELD_CLOSE, PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_SHIELD_FAR, PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_STORM_CLOSE, -PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)]);
-                    score.addCriteria(player, Criteria.PAWN_STORM_FAR, -PAWN_STORM_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_FAR_PLAYER1 - player][0] & otherPawnBitboard)]);
+                    if((B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0] & 0x8000000000000080L & rookBitboard) != 0L) score.addCriteria(board, player, Criteria.KING_BLOCKS_ROOK, -KING_BLOCKS_ROOK);
+                    if(((player == 0 ? 0x0000000000000060L : 0x6000000000000000L) & rookBitboard) != 0L) score.addCriteria(board, player, Criteria.ROOK_PROTECTS, ROOK_PROTECTS);
+                    score.addCriteria(board, player, Criteria.PAWN_SHIELD_CLOSE, PAWN_SHIELD_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_CLOSE_PLAYER0 + player][0] & pawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_SHIELD_FAR, PAWN_SHIELD_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_SHIELD_KINGSIDE_FAR_PLAYER0 + player][0] & pawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_STORM_CLOSE, -PAWN_STORM_CLOSE_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_CLOSE_PLAYER1 - player][0] & otherPawnBitboard)]);
+                    score.addCriteria(board, player, Criteria.PAWN_STORM_FAR, -PAWN_STORM_FAR_VALUE[Long.bitCount(B.BB[B.PAWN_STORM_KINGSIDE_FAR_PLAYER1 - player][0] & otherPawnBitboard)]);
                     break;
                 }
                 default: break;
@@ -244,72 +244,76 @@ public class Eval {
             int oRankDist = Math.abs(7 - (playerKingRank[other] << 1)) - 1;
             int oDist = ((oFileDist * oFileDist * oFileDist) + (oRankDist * oRankDist * oRankDist)) / 5;
             int distBetweenKings = (9 - Math.max(Math.abs(playerKingFile[player] - playerKingFile[other]), Math.abs(playerKingRank[player] - playerKingRank[other])));
-            score.addCriteria(player, Criteria.KING_ENDGAME_DISTANCE, ((oDist + distBetweenKings) * phase) / 24);
+            score.addCriteria(board, player, Criteria.KING_ENDGAME_DISTANCE, ((oDist + distBetweenKings) * phase) / 24);
         }
     }
 
     private void queenEval(int player, int other, long bitboard, long bishopBitboard, long knightBitboard) {
         // material value
-        score.addCriteria(player, Criteria.MATERIAL_QUEEN, PIECE_VALUE[Piece.QUEEN][Long.bitCount(bitboard)]);
+        score.addCriteria(board, player, Criteria.MATERIAL_QUEEN, PIECE_VALUE[Piece.QUEEN][Long.bitCount(bitboard)]);
         // early development
         if((bitboard & B.BB[B.QUEEN_START_POSITION_PLAYER0 + player][0]) == 0L &&
            (bishopBitboard & B.BB[B.BISHOP_START_POSITION_PLAYER0 + player][0]) != 0L &&
-           (knightBitboard & B.BB[B.KNIGHT_START_POSITION_PLAYER0 + player][0]) != 0L) score.addCriteria(player, Criteria.QUEEN_EARLY_DEVELOPMENT, -QUEEN_EARLY_DEVELOPMENT);
+           (knightBitboard & B.BB[B.KNIGHT_START_POSITION_PLAYER0 + player][0]) != 0L) score.addCriteria(board, player, Criteria.QUEEN_EARLY_DEVELOPMENT, -QUEEN_EARLY_DEVELOPMENT);
         int square;
         long queenAttacks;
         for(; bitboard != 0L; bitboard &= bitboard - 1) {
             square = Long.numberOfTrailingZeros(bitboard);
             // piece square bonus
-            score.addCriteria(player, Criteria.SQUARE_BONUS_QUEEN, Psqt.BONUS[Piece.QUEEN][player][square][phase]);
+            if(phase < 0) {
+                System.out.println();
+                Board.drawText(board);
+            }
+            score.addCriteria(board, player, Criteria.SQUARE_BONUS_QUEEN, Psqt.BONUS[Piece.QUEEN][player][square][phase]);
             // mobility
             queenAttacks = Magic.queenMoves(square, allOccupancy) & ~this.playerOccupancy[player];
-            score.addCriteria(player, Criteria.MOBILITY_QUEEN, MOBILITY_VALUE[Piece.QUEEN][Long.bitCount(queenAttacks)]);
+            score.addCriteria(board, player, Criteria.MOBILITY_QUEEN, MOBILITY_VALUE[Piece.QUEEN][Long.bitCount(queenAttacks)]);
             // queen affects other king safety
-            score.addCriteria(player, Criteria.QUEEN_AFFECTS_KING_SAFETY, KING_SAFETY_VALUE[Piece.QUEEN][Long.bitCount(queenAttacks & B.BB[B.KING_RING_PLAYER1 - player][0])]);
+            score.addCriteria(board, player, Criteria.QUEEN_AFFECTS_KING_SAFETY, KING_SAFETY_VALUE[Piece.QUEEN][Long.bitCount(queenAttacks & B.BB[B.KING_RING_PLAYER1 - player][0])]);
             // enemy king distance
-            score.addCriteria(player, Criteria.QUEEN_ENEMY_KING_DISTANCE, KING_DISTANCE_VALUE[Piece.QUEEN][((Math.abs((square >>> 3) - playerKingRank[other]) + Math.abs((square & 7) - playerKingFile[other])))]);
+            score.addCriteria(board, player, Criteria.QUEEN_ENEMY_KING_DISTANCE, KING_DISTANCE_VALUE[Piece.QUEEN][(14 - ((Math.abs((square >>> 3) - playerKingRank[other]) + Math.abs((square & 7) - playerKingFile[other]))))]);
         }
     }
 
     private void rookEval(int player, int other, long bitboard, long kingBitboard, long pawnBitboard, long otherPawnBitboard, long otherQueenBitboard) {
         // material value
         int numRooks = Long.bitCount(bitboard);
-        score.addCriteria(player, Criteria.MATERIAL_ROOK, PIECE_VALUE[Piece.ROOK][numRooks]);
+        score.addCriteria(board, player, Criteria.MATERIAL_ROOK, PIECE_VALUE[Piece.ROOK][numRooks]);
         // early development
-        if(Long.bitCount(bitboard & B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0]) < 2 && (kingBitboard & B.BB[B.KING_START_POSITION_PLAYER0 + player][0]) != 0L) score.addCriteria(player, Criteria.ROOK_EARLY_DEVELOPMENT, -ROOK_EARLY_DEVELOPMENT);
+        if(Long.bitCount(bitboard & B.BB[B.ROOK_START_POSITION_PLAYER0 + player][0]) < 2 && (kingBitboard & B.BB[B.KING_START_POSITION_PLAYER0 + player][0]) != 0L) score.addCriteria(board, player, Criteria.ROOK_EARLY_DEVELOPMENT, -ROOK_EARLY_DEVELOPMENT);
         // rook pair
-        score.addCriteria(player, Criteria.ROOK_PAIR, (numRooks > 1 ? -ROOK_PAIR : 0));
+        score.addCriteria(board, player, Criteria.ROOK_PAIR, (numRooks > 1 ? -ROOK_PAIR : 0));
         // rooks and pawns
         int numPawns = Long.bitCount(pawnBitboard);
-		score.addCriteria(player, Criteria.ROOK_PAWN, ROOK_PAWN_VALUE[numRooks][numPawns]);
+		score.addCriteria(board, player, Criteria.ROOK_PAWN, ROOK_PAWN_VALUE[numRooks][numPawns]);
         int square;
         long rookAttacks;
         int rookFile;
         for(; bitboard != 0L; bitboard &= bitboard - 1) {
             square = Long.numberOfTrailingZeros(bitboard);
             // piece square bonus
-            score.addCriteria(player, Criteria.SQUARE_BONUS_ROOK, Psqt.BONUS[Piece.ROOK][player][square][phase]);
+            score.addCriteria(board, player, Criteria.SQUARE_BONUS_ROOK, Psqt.BONUS[Piece.ROOK][player][square][phase]);
             // mobility
             rookAttacks = Magic.rookMoves(square, allOccupancy) & ~this.playerOccupancy[player];
-            score.addCriteria(player, Criteria.MOBILITY_ROOK, MOBILITY_VALUE[Piece.ROOK][Long.bitCount(rookAttacks)]);
+            score.addCriteria(board, player, Criteria.MOBILITY_ROOK, MOBILITY_VALUE[Piece.ROOK][Long.bitCount(rookAttacks)]);
             // rook open file
             rookFile = square & 7;
-            score.addCriteria(player, Criteria.ROOK_OPEN_FILE, ((pawnBitboard & B.BB[B.FILE][rookFile]) == 0L ? ROOK_OPEN_FILE : 0) + ((otherPawnBitboard & B.BB[B.FILE][rookFile]) == 0L ? ROOK_OPEN_FILE : 0));
+            score.addCriteria(board, player, Criteria.ROOK_OPEN_FILE, ((pawnBitboard & B.BB[B.FILE][rookFile]) == 0L ? ROOK_OPEN_FILE : 0) + ((otherPawnBitboard & B.BB[B.FILE][rookFile]) == 0L ? ROOK_OPEN_FILE : 0));
             // rook on other queen file
-            score.addCriteria(player, Criteria.ROOK_ON_QUEEN_FILE, (otherQueenBitboard & B.BB[B.FILE][rookFile]) != 0L ? ROOK_ON_QUEEN_FILE : 0);
+            score.addCriteria(board, player, Criteria.ROOK_ON_QUEEN_FILE, (otherQueenBitboard & B.BB[B.FILE][rookFile]) != 0L ? ROOK_ON_QUEEN_FILE : 0);
             // other king safety
-            score.addCriteria(player, Criteria.ROOK_AFFECTS_KING_SAFETY, KING_SAFETY_VALUE[Piece.ROOK][Long.bitCount(rookAttacks & B.BB[B.KING_RING_PLAYER1 - player][0])]);
+            score.addCriteria(board, player, Criteria.ROOK_AFFECTS_KING_SAFETY, KING_SAFETY_VALUE[Piece.ROOK][Long.bitCount(rookAttacks & B.BB[B.KING_RING_PLAYER1 - player][0])]);
             // other king distance
-            score.addCriteria(player, Criteria.ROOK_ENEMY_KING_DISTANCE, KING_DISTANCE_VALUE[Piece.ROOK][((Math.abs((square >>> 3) - playerKingRank[other]) + Math.abs(rookFile - playerKingFile[other])))]);
+            score.addCriteria(board, player, Criteria.ROOK_ENEMY_KING_DISTANCE, KING_DISTANCE_VALUE[Piece.ROOK][14 - (((Math.abs((square >>> 3) - playerKingRank[other]) + Math.abs(rookFile - playerKingFile[other]))))]);
         }
     }
 
     private void bishopEval(int player, int other, long bitboard, long pawnBitboard, long otherPawnBitboard) {
         // material value
         int numBishops = Long.bitCount(bitboard);
-        score.addCriteria(player, Criteria.MATERIAL_BISHOP, PIECE_VALUE[Piece.BISHOP][numBishops]);
+        score.addCriteria(board, player, Criteria.MATERIAL_BISHOP, PIECE_VALUE[Piece.BISHOP][numBishops]);
         // bishop pair
-        score.addCriteria(player, Criteria.BISHOP_PAIR, (numBishops > 1 ? BISHOP_PAIR : 0));
+        score.addCriteria(board, player, Criteria.BISHOP_PAIR, (numBishops > 1 ? BISHOP_PAIR : 0));
         int square;
         long bishopAttacks;
         int bishopFile;
@@ -318,37 +322,37 @@ public class Eval {
         for(; bitboard != 0L; bitboard &= bitboard - 1) {
             square = Long.numberOfTrailingZeros(bitboard);
             // piece square bonus
-            score.addCriteria(player, Criteria.SQUARE_BONUS_BISHOP, Psqt.BONUS[Piece.BISHOP][player][square][phase]);
+            score.addCriteria(board, player, Criteria.SQUARE_BONUS_BISHOP, Psqt.BONUS[Piece.BISHOP][player][square][phase]);
             // mobility
             bishopAttacks = Magic.bishopMoves(square, allOccupancy) & ~this.playerOccupancy[player];
-            score.addCriteria(player, Criteria.MOBILITY_BISHOP, MOBILITY_VALUE[Piece.BISHOP][Long.bitCount(bishopAttacks)]);
+            score.addCriteria(board, player, Criteria.MOBILITY_BISHOP, MOBILITY_VALUE[Piece.BISHOP][Long.bitCount(bishopAttacks)]);
             // outpost
             bishopFile = square & 7;
             bishopRank = square >>> 3;
             if((B.BB[B.PAWN_ATTACKS_PLAYER1 - player][square] & pawnBitboard) != 0L) {
-                if((B.BB[B.PASSED_PAWNS_FILES_PLAYER0 + player][bishopFile] & B.BB[B.FORWARD_RANKS_PLAYER0 + player][bishopRank] & otherPawnBitboard) == 0L) score.addCriteria(player, Criteria.BISHOP_OUTPOST, BISHOP_OUTPOST);
+                if((B.BB[B.PASSED_PAWNS_FILES_PLAYER0 + player][bishopFile] & B.BB[B.FORWARD_RANKS_PLAYER0 + player][bishopRank] & otherPawnBitboard) == 0L) score.addCriteria(board, player, Criteria.BISHOP_OUTPOST, BISHOP_OUTPOST);
             }
             // bad bishop
             squareColorBitboard = (B.BB[B.SQUARE_COLOR_LIGHT][0] & (1L << square)) != 0L ? B.BB[B.SQUARE_COLOR_LIGHT][0] : B.BB[B.SQUARE_COLOR_DARK][0];
-            score.addCriteria(player, Criteria.BAD_BISHOP, BISHOP_PAWN_VALUE[Long.bitCount(pawnBitboard & squareColorBitboard)][Long.bitCount(otherPawnBitboard & squareColorBitboard)]);
+            score.addCriteria(board, player, Criteria.BAD_BISHOP, BISHOP_PAWN_VALUE[Long.bitCount(pawnBitboard & squareColorBitboard)][Long.bitCount(otherPawnBitboard & squareColorBitboard)]);
             // own king distance
-            score.addCriteria(player, Criteria.BISHOP_PROTECTOR, -(Math.abs(bishopRank - playerKingRank[player]) + Math.abs(bishopFile - playerKingFile[player])));
+            score.addCriteria(board, player, Criteria.BISHOP_PROTECTOR, -(Math.abs(bishopRank - playerKingRank[player]) + Math.abs(bishopFile - playerKingFile[player])));
             // other king safety
-            score.addCriteria(player, Criteria.BISHOP_AFFECTS_KING_SAFETY, KING_SAFETY_VALUE[Piece.BISHOP][Long.bitCount(bishopAttacks & B.BB[B.KING_RING_PLAYER1 - player][0])]);
+            score.addCriteria(board, player, Criteria.BISHOP_AFFECTS_KING_SAFETY, KING_SAFETY_VALUE[Piece.BISHOP][Long.bitCount(bishopAttacks & B.BB[B.KING_RING_PLAYER1 - player][0])]);
             // other king distance
-            score.addCriteria(player, Criteria.BISHOP_ENEMY_KING_DISTANCE, KING_DISTANCE_VALUE[Piece.BISHOP][((Math.abs(bishopRank - playerKingRank[other]) + Math.abs(bishopFile - playerKingFile[other])))]);
+            score.addCriteria(board, player, Criteria.BISHOP_ENEMY_KING_DISTANCE, KING_DISTANCE_VALUE[Piece.BISHOP][14 - (((Math.abs(bishopRank - playerKingRank[other]) + Math.abs(bishopFile - playerKingFile[other]))))]);
         }
     }
 
     private void knightEval(int player, int other, long bitboard, long pawnBitboard, long otherPawnBitboard) {
         // material value
         int numKnights = Long.bitCount(bitboard);
-        score.addCriteria(player, Criteria.MATERIAL_KNIGHT, PIECE_VALUE[Piece.KNIGHT][numKnights]);
+        score.addCriteria(board, player, Criteria.MATERIAL_KNIGHT, PIECE_VALUE[Piece.KNIGHT][numKnights]);
         // knight pair
-        score.addCriteria(player, Criteria.KNIGHT_PAIR, (numKnights > 1 ? -KNIGHT_PAIR : 0));
+        score.addCriteria(board, player, Criteria.KNIGHT_PAIR, (numKnights > 1 ? -KNIGHT_PAIR : 0));
         // knight and pawns
         int numPawns = Long.bitCount(pawnBitboard);
-        score.addCriteria(player, Criteria.KNIGHT_PAWN, KNIGHT_PAWN_VALUE[numKnights][numPawns]);
+        score.addCriteria(board, player, Criteria.KNIGHT_PAWN, KNIGHT_PAWN_VALUE[numKnights][numPawns]);
         int square;
         long knightAttacks;
         int knightFile;
@@ -356,29 +360,29 @@ public class Eval {
         for(; bitboard != 0L; bitboard &= bitboard - 1) {
             square = Long.numberOfTrailingZeros(bitboard);
             // piece square bonus
-            score.addCriteria(player, Criteria.SQUARE_BONUS_KNIGHT, Psqt.BONUS[Piece.KNIGHT][player][square][phase]);
+            score.addCriteria(board, player, Criteria.SQUARE_BONUS_KNIGHT, Psqt.BONUS[Piece.KNIGHT][player][square][phase]);
             // mobility
             knightAttacks = B.BB[B.LEAP_ATTACKS][square] & ~this.playerOccupancy[player];
-            score.addCriteria(player, Criteria.MOBILITY_KNIGHT, MOBILITY_VALUE[Piece.KNIGHT][Long.bitCount(knightAttacks)]);
+            score.addCriteria(board, player, Criteria.MOBILITY_KNIGHT, MOBILITY_VALUE[Piece.KNIGHT][Long.bitCount(knightAttacks)]);
             // outpost
             knightFile = square & 7;
             knightRank = square >>> 3;
             if((B.BB[B.PAWN_ATTACKS_PLAYER1 - player][square] & pawnBitboard) != 0L) {
-                if((B.BB[B.PASSED_PAWNS_FILES_PLAYER0 + player][knightFile] & B.BB[B.FORWARD_RANKS_PLAYER0 + player][knightRank] & otherPawnBitboard) == 0L) score.addCriteria(player, Criteria.KNIGHT_OUTPOST, KNIGHT_OUTPOST);
+                if((B.BB[B.PASSED_PAWNS_FILES_PLAYER0 + player][knightFile] & B.BB[B.FORWARD_RANKS_PLAYER0 + player][knightRank] & otherPawnBitboard) == 0L) score.addCriteria(board, player, Criteria.KNIGHT_OUTPOST, KNIGHT_OUTPOST);
             }
             // own king distance
-            score.addCriteria(player, Criteria.KNIGHT_PROTECTOR, -(Math.abs(knightRank - playerKingRank[player]) + Math.abs(knightFile - playerKingFile[player])));
+            score.addCriteria(board, player, Criteria.KNIGHT_PROTECTOR, -(Math.abs(knightRank - playerKingRank[player]) + Math.abs(knightFile - playerKingFile[player])));
             // other king safety
-            score.addCriteria(player, Criteria.KNIGHT_AFFECTS_KING_SAFETY, KING_SAFETY_VALUE[Piece.KNIGHT][Long.bitCount(knightAttacks & B.BB[B.KING_RING_PLAYER1 - player][0])]);
+            score.addCriteria(board, player, Criteria.KNIGHT_AFFECTS_KING_SAFETY, KING_SAFETY_VALUE[Piece.KNIGHT][Long.bitCount(knightAttacks & B.BB[B.KING_RING_PLAYER1 - player][0])]);
             // other king distance
-            score.addCriteria(player, Criteria.KNIGHT_ENEMY_KING_DISTANCE, KING_DISTANCE_VALUE[Piece.KNIGHT][((Math.abs(knightRank - playerKingRank[other]) + Math.abs(knightFile - playerKingFile[other])))]);
+            score.addCriteria(board, player, Criteria.KNIGHT_ENEMY_KING_DISTANCE, KING_DISTANCE_VALUE[Piece.KNIGHT][((Math.abs(knightRank - playerKingRank[other]) + Math.abs(knightFile - playerKingFile[other])))]);
         }
     }
 
     private void pawnEval(int player, int other, long bitboard, long otherPawnBitboard, long kingBitboard) {
         // material value
         int numPawns = Long.bitCount(bitboard);
-        score.addCriteria(player, Criteria.MATERIAL_PAWN, PIECE_VALUE[Piece.PAWN][numPawns]);
+        score.addCriteria(board, player, Criteria.MATERIAL_PAWN, PIECE_VALUE[Piece.PAWN][numPawns]);
         long originalBitboard = bitboard;
         int square;
         int pawnFile;
@@ -391,35 +395,35 @@ public class Eval {
         for(; bitboard != 0L; bitboard &= bitboard - 1) {
             square = Long.numberOfTrailingZeros(bitboard);
             // piece square bonus
-            score.addCriteria(player, Criteria.SQUARE_BONUS_PAWN, Psqt.BONUS[Piece.PAWN][player][square][phase]);
+            score.addCriteria(board, player, Criteria.SQUARE_BONUS_PAWN, Psqt.BONUS[Piece.PAWN][player][square][phase]);
             // doubled pawns
             pawnFile = square & 7;
             pawnFileBitboard = B.BB[B.FILE][pawnFile];
-            if(Long.bitCount(bitboard & pawnFileBitboard) > 1) score.addCriteria(player, Criteria.DOUBLED_PAWN, -DOUBLED_PAWN);
+            if(Long.bitCount(bitboard & pawnFileBitboard) > 1) score.addCriteria(board, player, Criteria.DOUBLED_PAWN, -DOUBLED_PAWN);
             // weak pawn
             pawnRank = square >>> 3;
             adjacentFilesBitboard = (pawnFile > 0 ? B.BB[B.FILE][pawnFile - 1] : 0L) | (pawnFile < 7 ? B.BB[B.FILE][pawnFile + 1] : 0L);
             adjacentFilePawns = originalBitboard & adjacentFilesBitboard;
-            if((adjacentFilePawns & B.BB[B.FORWARD_RANKS_PLAYER1 - player][pawnRank]) == 0L) score.addCriteria(player, Criteria.WEAK_PAWN, -WEAK_PAWN);
+            if((adjacentFilePawns & B.BB[B.FORWARD_RANKS_PLAYER1 - player][player == 0 ? pawnRank + 1 : pawnRank - 1]) == 0L) score.addCriteria(board, player, Criteria.WEAK_PAWN, -WEAK_PAWN);
             // isolated pawn
-            if(adjacentFilePawns == 0L) score.addCriteria(player, Criteria.ISOLATED_PAWN, -ISOLATED_PAWN);
+            if(adjacentFilePawns == 0L) score.addCriteria(board, player, Criteria.ISOLATED_PAWN, -ISOLATED_PAWN);
             // pawn protects
-            if((B.BB[B.PAWN_ATTACKS_PLAYER0 + player][square] & this.playerOccupancy[player]) != 0L) score.addCriteria(player, Criteria.PAWN_PROTECTS, PAWN_PROTECTS);
+            if((B.BB[B.PAWN_ATTACKS_PLAYER0 + player][square] & this.playerOccupancy[player]) != 0L) score.addCriteria(board, player, Criteria.PAWN_PROTECTS, PAWN_PROTECTS);
             // pawn storm when own king on opposite side
             if(pawnFile < 3) {
-                if(playerKingFile[player] > 4) score.addCriteria(player, Criteria.PAWN_STORM_OWN_KING_OPPOSITE, PAWN_STORM_OWN_KING_OPPOSITE);
+                if(playerKingFile[player] > 4 && playerKingRank[player] == (player == Value.WHITE ? 0 : 7)) score.addCriteria(board, player, Criteria.PAWN_STORM_OWN_KING_OPPOSITE, PAWN_STORM_OWN_KING_OPPOSITE);
             }
             if(pawnFile > 4) {
-                if(playerKingFile[player] < 3) score.addCriteria(player, Criteria.PAWN_STORM_OWN_KING_OPPOSITE, PAWN_STORM_OWN_KING_OPPOSITE);
+                if(playerKingFile[player] < 3) score.addCriteria(board, player, Criteria.PAWN_STORM_OWN_KING_OPPOSITE, PAWN_STORM_OWN_KING_OPPOSITE);
             }
             // passed pawn
             forwardRanksBitboard = B.BB[B.FORWARD_RANKS_PLAYER0 + player][pawnRank];
             otherPassedPawnBlockers = otherPawnBitboard & (pawnFileBitboard | adjacentFilesBitboard) & forwardRanksBitboard;
             if(otherPassedPawnBlockers == 0L) {
                 // additional piece square bonus
-                score.addCriteria(player, Criteria.PASSED_PAWN_SQUARE_BONUS, Psqt.BONUS[Piece.PAWN][player][square][phase]);
+                score.addCriteria(board, player, Criteria.PASSED_PAWN_SQUARE_BONUS, Psqt.BONUS[Piece.PAWN][player][square][phase]);
                 // phalanx
-                score.addCriteria(player, Criteria.PASSED_PAWN_PHALANX, (originalBitboard & adjacentFilesBitboard & B.BB[B.RANK][pawnRank]) > 0L ? PASSED_PAWN_PHALANX : 0);
+                score.addCriteria(board, player, Criteria.PASSED_PAWN_PHALANX, (originalBitboard & adjacentFilesBitboard & B.BB[B.RANK][pawnRank]) > 0L ? PASSED_PAWN_PHALANX : 0);
                 // other king stops pawn when other has no material
                 int pawnPromoteDist = Math.abs((player == 0 ? 7 : 0) - pawnRank) + (pawnRank == (player == 0 ? 1 : 6) ? 1 : 0);
 				int otherKingDistFromPromote = Math.max(Math.abs((player == 0 ? 7 : 0) - playerKingRank[other]), Math.abs(pawnFile - playerKingFile[other]));
@@ -429,12 +433,12 @@ public class Eval {
 				int pawnDist = pawnPromoteDist - pawnTurnToMove + ownKingInFront;
 				int kingDist = otherKingDistFromPromote - kingTurnToMove;
 				if(kingDist > pawnDist) {
-					score.addCriteria(player, Criteria.PASSED_PAWN_UNSTOPPABLE, Piece.VALUE[Piece.BISHOP]);
+					score.addCriteria(board, player, Criteria.PASSED_PAWN_UNSTOPPABLE, Piece.VALUE[Piece.BISHOP]);
 				}
                 // other king distance when low material
                 kingDist = 8 - Math.max(Math.abs(playerKingRank[player] - pawnRank), Math.abs(playerKingFile[player] - pawnFile));
 				int otherKingDist = Math.max(Math.abs(playerKingRank[other] - pawnRank), Math.abs(playerKingFile[other] - pawnFile));
-				score.addCriteria(player, Criteria.PASSED_PAWN_ENEMY_KING_DISTANCE, (kingDist * kingDist + otherKingDist * otherKingDist) * (player == 0 ? pawnRank : 7 - pawnRank));
+				score.addCriteria(board, player, Criteria.PASSED_PAWN_ENEMY_KING_DISTANCE, (kingDist * kingDist + otherKingDist * otherKingDist) * (player == 0 ? pawnRank : 7 - pawnRank));
             }
         }
     }
@@ -454,5 +458,4 @@ public class Eval {
         if (bitboard != 0L) return Long.numberOfTrailingZeros(bitboard);
         return Value.INVALID;
     }
-    
 }
