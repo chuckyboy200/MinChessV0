@@ -233,6 +233,6 @@ public enum Game {
     }
 
     private void test() {
-        EvalTest.test();
+        SearchTest.test();
     }
 }
