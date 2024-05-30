@@ -7,12 +7,12 @@ import minchessv0.move.Move;
 public class EvalTest {
     
     public static void test() {
-        long[] board = Board.startingPosition();
-        long move = Move.stringToInt(board, Move.string(Move.convertStartTarget(12, 28)));
-        board = Board.makeMove(board, move);
+        long[] board = Board.fromFen("rnbq1bnr/pppppkpp/5p2/8/8/2N2P2/PPPPPKPP/R1BQ1BNR b - - 0 1");
         Board.drawText(board);
-        SearchParallelTest search = new SearchParallelTest(board, 6, 10000);
-        search.run();
+        Score score = new Eval(board).score();
+        int eval = score.eval();
+        Board.drawText(score.board());
+        System.out.println(score.stringAll() + "\n" + score.stringCriteriaTotal());
     }
 
     private EvalTest() {}
