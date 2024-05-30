@@ -84,22 +84,22 @@ public class Criteria {
         };
         int[] tempValue = { 0, // all values positive, bonuses added or penalties subtracted in eval function
             Piece.VALUE[Piece.QUEEN], Piece.VALUE[Piece.ROOK], Piece.VALUE[Piece.BISHOP], Piece.VALUE[Piece.KNIGHT], Piece.VALUE[Piece.PAWN],
-            0, 0, 0, 0, 0, 0,
-            10, 5, 7, 3,
-            30, 30,
-            30,
-            30, 14, 14, 11,
-            39, 14,
-            14, 21,
-            11, 11, 11, 7, 28, 11,
-            0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0,
-            0, 0,
-            0, 0,
-            0, 0, 0
+            0, 0, 0, 0, 0, 0,       // 6 - 11
+            10, 5, 7, 3,            // 12 - 15
+            30, 30,                 // 16 - 17
+            30,                     // 18
+            30, 14, 14, 11,         // 19 - 22
+            39, 14,                 // 23 - 24
+            14, 21,                 // 25 - 26
+            11, 11, 11, 7, 6, 11,   // 27 - 32
+            0,                      // 33
+            0, 0, 0, 0,             // 34 - 37
+            0, 0, 0, 0,             // 38 - 41
+            0, 0, 0, 0,             // 42 - 45
+            0,                      // 46
+            0, 0,                   // 47 - 48
+            0, 0,                   // 49 - 50
+            0, 0, 0                 // 51 - 53
         };
         for(int i = 0; i < MAX_CRITERIA; i ++) {
             CRITERIA_NAME[i] = tempName[i];
