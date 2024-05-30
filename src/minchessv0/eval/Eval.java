@@ -24,10 +24,10 @@ public class Eval implements Evaluator {
         this.playerKingSquare[1] = Long.numberOfTrailingZeros(board[Piece.BLACK_KING]);
         this.playerKingRank[1] = this.playerKingSquare[1] >>> 3;
         this.playerKingFile[1] = this.playerKingSquare[1] & 7;
-        this.phase = Math.min(24 - ((Long.bitCount(board[Piece.WHITE_QUEEN]) + Long.bitCount(board[Piece.BLACK_QUEEN])) * 4 +
+        this.phase = Math.min(0, Math.max(24 - ((Long.bitCount(board[Piece.WHITE_QUEEN]) + Long.bitCount(board[Piece.BLACK_QUEEN])) * 4 +
                      (Long.bitCount(board[Piece.WHITE_ROOK])  + Long.bitCount(board[Piece.BLACK_ROOK]))  * 2 +
                      Long.bitCount(board[Piece.WHITE_BISHOP]) + Long.bitCount(board[Piece.BLACK_BISHOP]) +
-                     Long.bitCount(board[Piece.WHITE_KNIGHT]) + Long.bitCount(board[Piece.BLACK_KNIGHT])), 24);
+                     Long.bitCount(board[Piece.WHITE_KNIGHT]) + Long.bitCount(board[Piece.BLACK_KNIGHT])), 24));
     }
 
     @Override
@@ -253,7 +253,7 @@ public class Eval implements Evaluator {
             // other king safety
             eval += KING_SAFETY_VALUE[Piece.QUEEN][Long.bitCount(queenAttacks & B.BB[B.KING_RING_PLAYER1 - player][0])];
             // other king distance
-            eval += KING_DISTANCE_VALUE[Piece.QUEEN][((Math.abs((square >>> 3) - playerKingRank[other]) + Math.abs((square & 7) - playerKingFile[other])))];
+            eval += KING_DISTANCE_VALUE[Piece.QUEEN][14 - ((Math.abs((square >>> 3) - playerKingRank[other]) + Math.abs((square & 7) - playerKingFile[other])))];
         }
         return eval;
     }
@@ -287,7 +287,7 @@ public class Eval implements Evaluator {
             // other king safety
             eval += KING_SAFETY_VALUE[Piece.ROOK][Long.bitCount(rookAttacks & B.BB[B.KING_RING_PLAYER1 - player][0])];
             // other king distance
-            eval += KING_DISTANCE_VALUE[Piece.ROOK][((Math.abs((square >>> 3) - playerKingRank[other]) + Math.abs(rookFile - playerKingFile[other])))];
+            eval += KING_DISTANCE_VALUE[Piece.ROOK][14 - ((Math.abs((square >>> 3) - playerKingRank[other]) + Math.abs(rookFile - playerKingFile[other])))];
         }
         return eval;
     }
@@ -324,7 +324,7 @@ public class Eval implements Evaluator {
             // other king safety
             eval += KING_SAFETY_VALUE[Piece.BISHOP][Long.bitCount(bishopAttacks & B.BB[B.KING_RING_PLAYER1 - player][0])];
             // other king distance
-            eval += KING_DISTANCE_VALUE[Piece.BISHOP][((Math.abs(bishopRank - playerKingRank[other]) + Math.abs(bishopFile - playerKingFile[other])))];
+            eval += KING_DISTANCE_VALUE[Piece.BISHOP][14 - ((Math.abs(bishopRank - playerKingRank[other]) + Math.abs(bishopFile - playerKingFile[other])))];
         }
         return eval;
     }
@@ -360,7 +360,7 @@ public class Eval implements Evaluator {
             // other king safety
             eval += KING_SAFETY_VALUE[Piece.KNIGHT][Long.bitCount(knightAttacks & B.BB[B.KING_RING_PLAYER1 - player][0])];
             // other king distance
-            eval += KING_DISTANCE_VALUE[Piece.KNIGHT][((Math.abs(knightRank - playerKingRank[other]) + Math.abs(knightFile - playerKingFile[other])))];
+            eval += KING_DISTANCE_VALUE[Piece.KNIGHT][14 - ((Math.abs(knightRank - playerKingRank[other]) + Math.abs(knightFile - playerKingFile[other])))];
         }
         return eval;
     }
