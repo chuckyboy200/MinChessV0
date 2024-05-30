@@ -14,6 +14,7 @@ public class SearchParallelTest implements Search, Runnable {
     public SearchParallelTest(long[] board, int maxDepth, long maxSearchTime) {
         this.board = new long[Board.MAX_BITBOARDS];
         System.arraycopy(board, 0, this.board, 0, Board.MAX_BITBOARDS);
+        this.playerToMove = (int) board[Board.STATUS] & Board.PLAYER_BIT;
         this.rootMoveList = Gen.gen(this.board, true, false);
         this.maxDepth = maxDepth;
         this.maxSearchTime = maxSearchTime;
@@ -65,6 +66,7 @@ public class SearchParallelTest implements Search, Runnable {
     private static final int MAX_PV_LENGTH = 20;
 
     private long[] board;
+    private int playerToMove;
     private long[] rootMoveList;
     private int rootMoveListLength;
     private int maxDepth;
@@ -91,15 +93,13 @@ public class SearchParallelTest implements Search, Runnable {
         long move;
         Score score;
         int eval;
-        int player = (int) board[Board.STATUS] & Board.PLAYER_BIT;
-        int other = 1 ^ player;
         for(int moveIndex = 0; moveIndex < this.rootMoveListLength; moveIndex ++) {
             move = this.rootMoveList[moveIndex];
             boardAfterMove = Board.makeMove(this.board, move);
-            score = new Eval(boardAfterMove).score();
-            eval = score.eval(player) - score.eval(other);
+            score = new Eval(boardAfterMove).score().negate();
+            eval = score.eval();
             this.rootMoveList[moveIndex] = (move & 0xffffffffL) | ((long) eval << 32);
-            //System.out.println((int) (this.rootMoveList[moveIndex] >>> 32));
+            System.out.println((int) (this.rootMoveList[moveIndex] >>> 32));
         }
         Sort.sort(this.rootMoveList);
     }
@@ -110,7 +110,7 @@ public class SearchParallelTest implements Search, Runnable {
         this.bestMove = 0L;
         this.startTime = System.currentTimeMillis();
         this.nextTimeToSendInfo = this.startTime + this.sendInfoDelay;
-        this.currentBestScore = new Score(-INFINITY);
+        this.currentBestScore = new Score(this.playerToMove, -INFINITY);
         this.bestScoreFoundAtDepth = 0;
         this.infoTimeElapsed = this.startTime;
         long[] boardAfterMove;
@@ -132,7 +132,7 @@ public class SearchParallelTest implements Search, Runnable {
                 moveEval = (int) (move >> 32);
                 boardAfterMove = Board.makeMove(this.board, move);
                 tempPV[0] = 0;
-                score = search(boardAfterMove, depth, new Score(INFINITY).negate(), new Score(INFINITY), tempPV).negate();
+                score = search(boardAfterMove, depth, new Score(1 ^ player, -INFINITY), new Score(1 ^ player, INFINITY), tempPV).negate();
                 eval = score.eval();
                 if(eval > moveEval) this.rootMoveList[moveIndex] = (move & 0xffffffffL) | ((long) eval << 32);
                 if(eval > bestEval) {
@@ -155,15 +155,15 @@ public class SearchParallelTest implements Search, Runnable {
     }
 
     private Score search(long[] board, int depth, Score alpha, Score beta, int[] pv) {
-        //System.out.println("search depth " + depth + " alpha " + alpha.stringInfo() + " beta " + beta.stringInfo());
-        //try {Thread.sleep(1000);} catch(InterruptedException e) { e.printStackTrace(); }
+        System.out.println("search depth " + depth + " alpha [" + alpha.stringInfo() + "] beta [" + beta.stringInfo() + "]");
+        try {Thread.sleep(1000);} catch(InterruptedException e) { e.printStackTrace(); }
         if(this.searchHalted || this.timeReached) return alpha;
         if(this.nextTimeToSendInfo < System.currentTimeMillis()) {
             this.nextTimeToSendInfo = System.currentTimeMillis() + this.sendInfoDelay;
             sendInfo();
         }
         if(depth < 1) {
-            //System.out.println(" redirecting to quiesce\nalpha " + alpha.alphaBeta() + " beta " + beta.alphaBeta());
+            System.out.println(" redirecting to quiesce\nalpha " + alpha.eval() + " beta " + beta.eval());
             return quiesce(board, alpha, beta);
         }
         this.nodesSearched ++;
@@ -181,20 +181,20 @@ public class SearchParallelTest implements Search, Runnable {
             boardAfterMove = Board.makeMove(board, move);
             if(Board.isPlayerInCheck(boardAfterMove, player)) continue;
             childPV[0] = 0;
-            //System.out.println("move " + moveIndex + " " + Move.string(move));
+            System.out.println("move " + moveIndex + " " + Move.string(move));
             score = new Score(search(boardAfterMove, depth - 1, new Score(beta.negate()), new Score(alpha.negate()),  childPV).negate());
-            //System.out.println("after search alpha " + alpha.stringInfo() + " beta " + beta.stringInfo() + " score " + score.stringInfo());
+            System.out.println("after search alpha " + alpha.stringInfo() + " beta " + beta.stringInfo() + " score " + score.stringInfo());
             eval = score.eval();
             if(eval > bestEval) {
                 bestEval = eval;
                 pv[0] = childPV[0] + 1;
                 pv[1] = (int) move;
                 System.arraycopy(childPV, 1, pv, 2, childPV[0]);
-                if(eval >= beta.alphaBeta()) {
-                    //System.out.println("search returning beta\n" + beta.stringInfo());
+                if(eval >= beta.eval()) {
+                    System.out.println("search returning beta\n" + beta.stringInfo());
                     return beta;
                 }
-                if(eval > alpha.alphaBeta()) {
+                if(eval > alpha.eval()) {
                     alpha = new Score(score);
                 }
             }
@@ -202,21 +202,21 @@ public class SearchParallelTest implements Search, Runnable {
         if(System.currentTimeMillis() - this.startTime >= this.maxSearchTime) {
             this.timeReached = true;
         }
-        //System.out.println("search returning alpha\n" + alpha.stringInfo());
+        System.out.println("search returning alpha\n" + alpha.stringInfo());
         return alpha;
     }
 
     private Score quiesce(long[] board, Score alpha, Score beta) {
         Score standPat = new Eval(board).score();
-        //System.out.println("standpat\n" + standPat.stringInfo() + " beta " + beta.alphaBeta() + " alpha " + alpha.alphaBeta());
+        System.out.println("standpat\n" + standPat.stringInfo() + " beta " + beta.eval() + " alpha " + alpha.eval());
         int standPatEval = standPat.eval();
-        if(standPatEval >= beta.alphaBeta()) return beta;
-        if(standPatEval + Piece.VALUE[Piece.QUEEN] < alpha.alphaBeta()) return alpha;
-        if(standPatEval > alpha.alphaBeta()) {
+        if(standPatEval >= beta.eval()) return beta;
+        if(standPatEval + Piece.VALUE[Piece.QUEEN] < alpha.eval()) return alpha;
+        if(standPatEval > alpha.eval()) {
             alpha = new Score(standPat);
-            //System.out.println("copying standPat to alpha");
-            //System.out.println("standPat =\n" + standPat.stringInfo());
-            //System.out.println("\nalpha =\n" + alpha.stringInfo());
+            System.out.println("copying standPat to alpha");
+            System.out.println("standPat " + standPat.stringInfo());
+            System.out.println("alpha " + alpha.stringInfo());
         }
         long[] localMoveList = Gen.gen(board, false, true);
         int localMoveListLength = (int) localMoveList[Gen.MOVELIST_SIZE];
@@ -236,13 +236,13 @@ public class SearchParallelTest implements Search, Runnable {
             if(Board.isPlayerInCheck(boardAfterMove, player)) continue;
             score = new Score(quiesce(boardAfterMove, new Score(beta.negate()), new Score(alpha.negate())).negate());
             eval = score.eval();
-            if(eval >= beta.alphaBeta()) {
-                //System.out.println("quiesce returning beta\n" + beta.stringInfo());
+            if(eval >= beta.eval()) {
+                System.out.println("quiesce returning beta\n" + beta.stringInfo());
                 return beta;
             }
-            if(eval > alpha.alphaBeta()) alpha = new Score(score);
+            if(eval > alpha.eval()) alpha = new Score(score);
         }
-        //System.out.println("quiesce returning alpha\n" + alpha.stringInfo());
+        System.out.println("quiesce returning alpha\n" + alpha.stringInfo());
         return alpha;
     }
 
