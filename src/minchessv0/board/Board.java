@@ -88,7 +88,7 @@ public class Board {
      * @return true if kingside castling is possible
      */
     public static boolean kingSide(long[] board, int player) {
-        return (board[STATUS] & (player == Value.WHITE ? WHITE_KINGSIDE_BITS : BLACK_KINGSIDE_BITS)) != 0L;
+        return (board[STATUS] >>> CASTLING_SHIFT & (player == Value.WHITE ? WHITE_KINGSIDE_BITS : BLACK_KINGSIDE_BITS)) != 0L;
     }
 
     public static final int WHITE_QUEENSIDE_BITS = 0b10;
@@ -102,7 +102,7 @@ public class Board {
      * @return true if queenside castling is possible
      */
     public static boolean queenSide(long[] board, int player) {
-        return (board[STATUS] & (player == Value.WHITE ? WHITE_QUEENSIDE_BITS : BLACK_QUEENSIDE_BITS)) != 0L;
+        return (board[STATUS] >>> CASTLING_SHIFT & (player == Value.WHITE ? WHITE_QUEENSIDE_BITS : BLACK_QUEENSIDE_BITS)) != 0L;
     }
 
     public static final long WHITE_ENPASSANT_SQUARES = 0x0000ff0000000000L;
@@ -543,6 +543,10 @@ public class Board {
                 }
             }
         }
+        /*
+         * flip the player zobrist
+         */
+        key ^= Zobrist.WHITEMOVE;
         /*
          * create the new boards STATUS bits and set its KEY, then return the new board
          * array
